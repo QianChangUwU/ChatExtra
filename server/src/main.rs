@@ -60,6 +60,7 @@ pub struct State {
     pub secrets_requests: HashMap<Uuid, SecretsRequestInfo>,
     pub messages_sent: AtomicU64,
     pub updater_tx: UnboundedSender<i64>,
+    pub verify_on_lodestone: bool,
 }
 
 impl State {
@@ -80,7 +81,10 @@ impl State {
             return Some(id);
         }
 
-        let world_name = util::world_from_id(world)?.as_str();
+        let world_name = match util::world_from_id(world) {
+            Some(w) => w.as_str().to_string(),
+            None => format!("world_{}", world),
+        };
         let id = sqlx::query!(
             // language=sqlite
             "select lodestone_id from users where name = ? and world = ?",
@@ -133,6 +137,11 @@ async fn main() -> Result<()> {
 
     // set up server
     let server = TcpListener::bind(&config.server.address).await?;
+    let verify_on_lodestone = config.registration
+        .as_ref()
+        .map(|r| r.verify_on_lodestone)
+        .unwrap_or(true);
+
     let state = Arc::new(RwLock::new(State {
         db: pool,
         clients: Default::default(),
@@ -140,6 +149,7 @@ async fn main() -> Result<()> {
         secrets_requests: Default::default(),
         messages_sent: AtomicU64::default(),
         updater_tx,
+        verify_on_lodestone,
     }));
 
     let listening_on = server.local_addr()

@@ -10,6 +10,55 @@ use tokio::sync::RwLock;
 use crate::{types::protocol::FailureReason, util::{hash_key, send, world_from_id}, ClientState, RegisterRequest, RegisterResponse, State, WsStream};
 
 pub async fn register(state: Arc<RwLock<State>>, _client_state: Arc<RwLock<ClientState>>, conn: &mut WsStream, number: u32, req: RegisterRequest) -> Result<()> {
+    let verify = state.read().await.verify_on_lodestone;
+
+    if !verify {
+        // direct registration without lodestone verification
+        direct_register(state, conn, number, req).await
+    } else {
+        // full lodestone verification
+        verify_register(state, conn, number, req).await
+    }
+}
+
+async fn direct_register(state: Arc<RwLock<State>>, conn: &mut WsStream, number: u32, req: RegisterRequest) -> Result<()> {
+    let world_name = world_from_id(req.world)
+        .map(|w| w.as_str().to_string())
+        .unwrap_or_else(|| format!("world_{}", req.world));
+
+    let key = prefixed_api_key::generate("extrachat", None);
+    let hash = hash_key(&key);
+
+    sqlx::query!(
+        // language=sqlite
+        "
+            insert into users (lodestone_id, name, world, key_short, key_hash, last_updated)
+            values (?1, ?2, ?3, ?4, ?5, current_timestamp)
+            on conflict (lodestone_id)
+                do update set name         = ?2,
+                              world        = ?3,
+                              key_short    = ?4,
+                              key_hash     = ?5,
+                              last_updated = current_timestamp
+        ",
+        0i64,
+        req.name,
+        world_name,
+        key.short_token,
+        hash,
+    )
+        .execute(&state.read().await.db)
+        .await
+        .context("could not insert user")?;
+
+    send(conn, number, RegisterResponse::Success {
+        key: key.to_string().into(),
+    }).await?;
+
+    Ok(())
+}
+
+async fn verify_register(state: Arc<RwLock<State>>, conn: &mut WsStream, number: u32, req: RegisterRequest) -> Result<()> {
     let scraper = LodestoneScraper::default();
 
     // look up character by name on lodestone (search all worlds)
@@ -95,7 +144,6 @@ pub async fn register(state: Arc<RwLock<State>>, _client_state: Arc<RwLock<Clien
     // verify challenge
     let challenge = match challenge {
         Some(c) => c,
-        // should not be possible
         None => return Ok(()),
     };
 

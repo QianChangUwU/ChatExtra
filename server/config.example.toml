@@ -4,6 +4,12 @@ address = '0.0.0.0:8080'
 [database]
 path = './database.sqlite'
 
+# Registration settings
+# For CN servers or private use, set verify_on_lodestone = false
+# to skip Lodestone verification and allow direct registration
+[registration]
+verify_on_lodestone = false
+
 # Optional: InfluxDB metrics
 # [influx]
 # url = "http://localhost:8086"

@@ -29,7 +29,7 @@ entry = {
     'Tags': ['chat', 'linkshell', 'cn'],
     'ApplicableVersion': 'any',
     'LoadPriority': 0,
-    'AcceptsFeedback': true,
+    'AcceptsFeedback': True,
     'LastUpdate': int(time.time()),
 }
 

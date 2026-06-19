@@ -66,16 +66,16 @@ internal class ChannelList {
         ImGui.PopFont();
 
         if (ImGui.BeginPopup("create-channel-popup")) {
-            ImGui.TextUnformatted("Create a new ExtraChat Linkshell");
+            ImGui.TextUnformatted("创建新的 ExtraChat 频道");
 
             ImGui.SetNextItemWidth(350 * ImGuiHelpers.GlobalScale);
-            ImGui.InputTextWithHint("##linkshell-name", "Linkshell name", ref this._createName, 64);
+            ImGui.InputTextWithHint("##linkshell-name", "频道名称", ref this._createName, 64);
 
             if (ImGui.IsWindowAppearing()) {
                 ImGui.SetKeyboardFocusHere(-1);
             }
 
-            if (!string.IsNullOrWhiteSpace(this._createName) && ImGui.Button("Create") && !this.Plugin.PluginUi.Busy) {
+            if (!string.IsNullOrWhiteSpace(this._createName) && ImGui.Button("创建") && !this.Plugin.PluginUi.Busy) {
                 this.Plugin.PluginUi.Busy = true;
                 var name = this._createName;
                 Task.Run(async () => await this.Plugin.Client.Create(name))
@@ -88,7 +88,7 @@ internal class ChannelList {
         }
 
         if (this.Plugin.Client.Channels.Count == 0 && this.Plugin.Client.InvitedChannels.Count == 0) {
-            ImGui.TextUnformatted("You aren't in any linkshells yet. Try creating or joining one first.");
+            ImGui.TextUnformatted("你还没有加入任何频道，请先创建一个。");
             goto AfterTable;
         }
 
@@ -187,41 +187,41 @@ internal class ChannelList {
 
         var invited = this.Plugin.Client.InvitedChannels.ContainsKey(id);
         if (invited) {
-            if (ImGui.Selectable("Accept invite")) {
+            if (ImGui.Selectable("接受邀请")) {
                 Task.Run(async () => await this.Plugin.Client.Join(id));
             }
 
-            if (ImGuiUtil.SelectableConfirm("Decline invite")) {
+            if (ImGuiUtil.SelectableConfirm("拒绝邀请")) {
                 Task.Run(async () => await this.Plugin.Client.Leave(id));
             }
         } else {
-            if (ImGuiUtil.SelectableConfirm("Leave")) {
+            if (ImGuiUtil.SelectableConfirm("退出")) {
                 Task.Run(async () => await this.Plugin.Client.Leave(id));
             }
 
             if (rank == Rank.Admin) {
-                if (ImGuiUtil.SelectableConfirm("Disband")) {
+                if (ImGuiUtil.SelectableConfirm("解散")) {
                     Task.Run(async () => {
                         if (await this.Plugin.Client.Disband(id) is { } error) {
-                            this.Plugin.ShowError($"Could not disband \"{name}\": {error}");
+                            this.Plugin.ShowError($"无法解散 \"{name}\": {error}");
                         }
                     });
                 }
             }
 
-            if (rank == Rank.Admin && info != null && ImGui.BeginMenu($"Rename##{id}-rename")) {
+            if (rank == Rank.Admin && info != null && ImGui.BeginMenu($"重命名##{id}-rename")) {
                 if (ImGui.IsWindowAppearing()) {
                     this._rename = string.Empty;
                 }
 
                 ImGui.SetNextItemWidth(350 * ImGuiHelpers.GlobalScale);
-                ImGui.InputTextWithHint($"##{id}-rename-input", "New name", ref this._rename, 64);
+                ImGui.InputTextWithHint($"##{id}-rename-input", "新名称", ref this._rename, 64);
 
                 if (ImGui.IsWindowAppearing()) {
                     ImGui.SetKeyboardFocusHere(-1);
                 }
 
-                if (ImGui.Button($"Rename##{id}-rename-button") && !string.IsNullOrWhiteSpace(this._rename)) {
+                if (ImGui.Button($"重命名##{id}-rename-button") && !string.IsNullOrWhiteSpace(this._rename)) {
                     var newName = SecretBox.Encrypt(info.SharedSecret, Encoding.UTF8.GetBytes(this._rename));
                     Task.Run(async () => await this.Plugin.Client.UpdateToast(id, new UpdateKind.Name(newName)));
                     ImGui.CloseCurrentPopup();
@@ -230,17 +230,17 @@ internal class ChannelList {
                 ImGui.EndMenu();
             }
 
-            if (ImGui.BeginMenu($"Invite##{id}-invite")) {
+            if (ImGui.BeginMenu($"邀请##{id}-invite")) {
                 if (ImGui.IsWindowAppearing()) {
                     this._inviteName = string.Empty;
                     this._inviteWorld = 0;
                 }
 
                 ImGui.SetNextItemWidth(250 * ImGuiHelpers.GlobalScale);
-                ImGui.InputTextWithHint("##invite-name", "Name", ref this._inviteName, 32);
+                ImGui.InputTextWithHint("##invite-name", "角色名", ref this._inviteName, 32);
 
                 ImGui.SetNextItemWidth(250 * ImGuiHelpers.GlobalScale);
-                var preview = this._inviteWorld == 0 ? "World" : WorldUtil.WorldName(this._inviteWorld);
+                var preview = this._inviteWorld == 0 ? "服务器" : WorldUtil.WorldName(this._inviteWorld);
                 if (ImGui.BeginCombo("##invite-world", preview)) {
                     foreach (var (dc, worlds) in this._worlds) {
                         ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetStyle().Colors[(int) ImGuiCol.TextDisabled]);
@@ -260,7 +260,7 @@ internal class ChannelList {
                     ImGui.EndCombo();
                 }
 
-                if (ImGui.Button($"Invite##{id}-invite-button") && !string.IsNullOrWhiteSpace(this._inviteName) && this._inviteWorld != 0) {
+                if (ImGui.Button($"邀请##{id}-invite-button") && !string.IsNullOrWhiteSpace(this._inviteName) && this._inviteWorld != 0) {
                     var inviteName = this._inviteName;
                     var inviteWorld = this._inviteWorld;
 
@@ -272,7 +272,7 @@ internal class ChannelList {
 
             ImGui.Separator();
 
-            if (ImGui.BeginMenu("Change number")) {
+            if (ImGui.BeginMenu("更改编号")) {
                 ImGui.SetNextItemWidth(150 * ImGuiHelpers.GlobalScale);
                 channelOrder.TryGetValue(id, out var refOrder);
                 var old = refOrder;
@@ -296,7 +296,7 @@ internal class ChannelList {
             }
 
             if (info == null) {
-                if (ImGui.Selectable("Request secrets")) {
+                if (ImGui.Selectable("请求密钥")) {
                     Task.Run(async () => await this.Plugin.Client.RequestSecrets(id));
                 }
             }
@@ -352,44 +352,44 @@ internal class ChannelList {
 
         var cursor = ImGui.GetCursorPos();
 
-        if (rank == Rank.Admin) {
-            if (member.Rank is not (Rank.Admin or Rank.Invited)) {
-                if (ImGuiUtil.SelectableConfirm("Promote to admin", tooltip: "This will demote you to moderator.")) {
+            if (rank == Rank.Admin) {
+                if (member.Rank is not (Rank.Admin or Rank.Invited)) {
+                    if (ImGuiUtil.SelectableConfirm("提升为管理", tooltip: "这将把你降级为版主。")) {
                     Task.Run(async () => await this.Plugin.Client.Promote(this._selectedChannel, member.Name, member.World, Rank.Admin));
                 }
             }
 
-            if (member.Rank == Rank.Moderator && ImGuiUtil.SelectableConfirm("Demote")) {
+            if (member.Rank == Rank.Moderator && ImGuiUtil.SelectableConfirm("降级")) {
                 Task.Run(async () => await this.Plugin.Client.Promote(this._selectedChannel, member.Name, member.World, Rank.Member));
             }
 
-            if (member.Rank == Rank.Member && ImGuiUtil.SelectableConfirm("Promote to moderator")) {
+            if (member.Rank == Rank.Member && ImGuiUtil.SelectableConfirm("提升为版主")) {
                 Task.Run(async () => await this.Plugin.Client.Promote(this._selectedChannel, member.Name, member.World, Rank.Moderator));
             }
         }
 
         if (rank >= Rank.Moderator) {
             var canKick = member.Rank < rank && member.Rank != Rank.Invited;
-            if (canKick && ImGuiUtil.SelectableConfirm("Kick")) {
+            if (canKick && ImGuiUtil.SelectableConfirm("踢出")) {
                 Task.Run(async () => {
                     if (await this.Plugin.Client.Kick(this._selectedChannel, member.Name, member.World) is { } error) {
-                        this.Plugin.ShowError($"Could not kick {member.Name}: {error}");
+                        this.Plugin.ShowError($"无法踢出 {member.Name}: {error}");
                     }
                 });
             }
 
-            if (member.Rank == Rank.Invited && ImGuiUtil.SelectableConfirm("Cancel invite")) {
+            if (member.Rank == Rank.Invited && ImGuiUtil.SelectableConfirm("取消邀请")) {
                 Task.Run(async () => await this.Plugin.Client.Kick(this._selectedChannel, member.Name, member.World));
             }
         }
 
         if (rank == Rank.Invited && member.Rank == Rank.Invited) {
             if (member.Name == this.Plugin.LocalPlayer?.Name.TextValue && member.World == this.Plugin.LocalPlayer?.HomeWorld.RowId) {
-                if (ImGui.Selectable("Accept invite")) {
+                if (ImGui.Selectable("接受邀请")) {
                     Task.Run(async () => await this.Plugin.Client.Join(this._selectedChannel));
                 }
 
-                if (ImGuiUtil.SelectableConfirm("Decline invite")) {
+                if (ImGuiUtil.SelectableConfirm("拒绝邀请")) {
                     Task.Run(async () => await this.Plugin.Client.Leave(this._selectedChannel));
                 }
             }
@@ -397,7 +397,7 @@ internal class ChannelList {
 
         if (cursor == ImGui.GetCursorPos()) {
             ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetStyle().Colors[(int) ImGuiCol.TextDisabled]);
-            ImGui.TextUnformatted("No options available");
+            ImGui.TextUnformatted("无可用操作");
             ImGui.PopStyleColor();
         }
 

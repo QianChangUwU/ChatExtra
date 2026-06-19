@@ -100,7 +100,7 @@ internal class Client : IDisposable {
                     Plugin.Log.Error(ex, "Error in client loop");
                     if (this._wasConnected) {
                         this.Plugin.ChatGui.Print(new XivChatEntry {
-                            Message = "Disconnected from ExtraChat. Trying to reconnect.",
+                            Message = "ExtraChat 连接已断开，正在重连...",
                             Type = XivChatType.Urgent,
                         });
                     }
@@ -165,7 +165,7 @@ internal class Client : IDisposable {
             if (await this.Authenticate()) {
                 this._wasConnected = true;
                 this.Plugin.ChatGui.Print(new XivChatEntry {
-                    Message = "Connected to ExtraChat.",
+                    Message = "已连接到 ExtraChat。",
                     Type = XivChatType.Notice,
                 });
 
@@ -280,12 +280,12 @@ internal class Client : IDisposable {
         var channelName = this.Plugin.ConfigInfo.GetName(channel);
         try {
             if (await this.Invite(name, world, channel) == null) {
-                this.Plugin.ShowError($"Could not invite {name}{PluginUi.CrossWorld}{worldName} to \"{channelName}\": not logged into ExtraChat");
+                this.Plugin.ShowError($"无法邀请 {name}{PluginUi.CrossWorld}{worldName} 加入 \"{channelName}\"：未登录 ExtraChat");
             } else {
-                this.Plugin.ShowInfo($"Invited {name}{PluginUi.CrossWorld}{worldName} to \"{channelName}\"");
+                this.Plugin.ShowInfo($"已邀请 {name}{PluginUi.CrossWorld}{worldName} 加入 \"{channelName}\"");
             }
         } catch (Exception ex) {
-            this.Plugin.ShowError($"Could not invite {name}{PluginUi.CrossWorld}{worldName} to \"{channelName}\": {ex.Message}");
+            this.Plugin.ShowError($"无法邀请 {name}{PluginUi.CrossWorld}{worldName} 加入 \"{channelName}\"：{ex.Message}");
         }
     }
 
@@ -301,7 +301,7 @@ internal class Client : IDisposable {
     internal async Task DeleteAccountToast() {
         var message = await this.DeleteAccount();
         if (message != null) {
-            this.Plugin.ShowError($"Could not delete account: {message}");
+            this.Plugin.ShowError($"无法删除账号：{message}");
             return;
         }
 
@@ -399,11 +399,11 @@ internal class Client : IDisposable {
 
         switch (response) {
             case ResponseKind.Error { Response.Error: var error }: {
-                this.Plugin.ShowError($"Failed to join \"{info.Name}\": {error}");
+                this.Plugin.ShowError($"加入 \"{info.Name}\" 失败：{error}");
                 break;
             }
             case ResponseKind.Join { Response: var resp }: {
-                this.Plugin.ShowInfo($"Joined \"{info.Name}\"");
+                this.Plugin.ShowInfo($"已加入 \"{info.Name}\"");
                 this.InvitedChannels.Remove(channelId);
                 this.Channels[channelId] = resp.Channel;
                 this.ChannelRanks[channelId] = Rank.Member;
@@ -502,7 +502,7 @@ internal class Client : IDisposable {
         }
 
         var name = this.Plugin.ConfigInfo.GetName(id);
-        this.Plugin.ShowError($"Could not update \"{name}\": {error}");
+        this.Plugin.ShowError($"无法更新 \"{name}\"：{error}");
     }
 
     internal async Task RequestSecrets(Guid id) {
@@ -522,7 +522,7 @@ internal class Client : IDisposable {
 
     internal async Task AllowInvitesToast(bool allow) {
         if (!await this.AllowInvites(allow)) {
-            this.Plugin.ShowError("Could not set invite permissions.");
+            this.Plugin.ShowError("无法设置邀请权限。");
         }
     }
 
@@ -775,10 +775,10 @@ internal class Client : IDisposable {
 
                 if (isSelf) {
                     this.ChannelRanks[resp.Channel] = Rank.Member;
-                    this.Plugin.ShowInfo($"You have joined \"{channelName}\"");
+                    this.Plugin.ShowInfo($"你已加入 \"{channelName}\"");
                 } else {
                     var worldName = WorldUtil.WorldName(resp.World);
-                    this.Plugin.ShowInfo($"{resp.Name}{PluginUi.CrossWorld}{worldName} has joined \"{channelName}\"");
+                    this.Plugin.ShowInfo($"{resp.Name}{PluginUi.CrossWorld}{worldName} 已加入 \"{channelName}\"");
                 }
 
                 break;
@@ -791,10 +791,10 @@ internal class Client : IDisposable {
                     this.Plugin.ConfigInfo.RemoveChannelIndex(resp.Channel);
                     this.Plugin.SaveConfig();
 
-                    this.Plugin.ShowInfo($"You have been kicked from \"{channelName}\"");
+                    this.Plugin.ShowInfo($"你已被踢出 \"{channelName}\"");
                 } else {
                     var worldName = WorldUtil.WorldName(resp.World);
-                    this.Plugin.ShowInfo($"{resp.Name}{PluginUi.CrossWorld}{worldName} has been kicked from \"{channelName}\"");
+                    this.Plugin.ShowInfo($"{resp.Name}{PluginUi.CrossWorld}{worldName} 已被踢出 \"{channelName}\"");
                 }
 
                 break;
@@ -804,10 +804,10 @@ internal class Client : IDisposable {
 
                 if (isSelf) {
                     this.ChannelRanks.Remove(resp.Channel);
-                    this.Plugin.ShowInfo($"You have left \"{channelName}\"");
+                    this.Plugin.ShowInfo($"你已退出 \"{channelName}\"");
                 } else {
                     var worldName = WorldUtil.WorldName(resp.World);
-                    this.Plugin.ShowInfo($"{resp.Name}{PluginUi.CrossWorld}{worldName} has left \"{channelName}\"");
+                    this.Plugin.ShowInfo($"{resp.Name}{PluginUi.CrossWorld}{worldName} 已退出 \"{channelName}\"");
                 }
 
                 break;
@@ -827,14 +827,14 @@ internal class Client : IDisposable {
                     });
                 }
 
-                var verb = wasPromotion ? "promoted" : "demoted";
+                var verb = wasPromotion ? "被提升为" : "被降级为";
 
                 if (isSelf) {
                     this.ChannelRanks[resp.Channel] = promote.Rank;
-                    this.Plugin.ShowInfo($"You have been {verb} to {promote.Rank} in \"{channelName}\"");
+                    this.Plugin.ShowInfo($"你在 \"{channelName}\" 中{verb}{promote.Rank}");
                 } else {
                     var worldName = WorldUtil.WorldName(resp.World);
-                    this.Plugin.ShowInfo($"{resp.Name}{PluginUi.CrossWorld}{worldName} has been {verb} to {promote.Rank} in \"{channelName}\"");
+                    this.Plugin.ShowInfo($"{resp.Name}{PluginUi.CrossWorld}{worldName} 在 \"{channelName}\" 中{verb}{promote.Rank}");
                 }
 
                 break;
@@ -847,7 +847,7 @@ internal class Client : IDisposable {
 
     private void HandleDisband(DisbandResponse resp) {
         if (this.Plugin.ConfigInfo.Channels.TryGetValue(resp.Channel, out var info)) {
-            this.Plugin.ShowInfo($"\"{info.Name}\" has been disbanded.");
+            this.Plugin.ShowInfo($"\"{info.Name}\" 已被解散。");
         }
 
         this.ActuallyLeave(resp.Channel);
@@ -1019,6 +1019,6 @@ internal class Client : IDisposable {
         this.ChannelRanks[info.Channel.Id] = Rank.Invited;
         this.Plugin.SaveConfig();
 
-        this.Plugin.ShowInfo($"Invited to join \"{name}\" by {info.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(info.World)}");
+        this.Plugin.ShowInfo($"收到 {info.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(info.World)} 的邀请，加入 \"{name}\"");
     }
 }

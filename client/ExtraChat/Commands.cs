@@ -31,7 +31,7 @@ internal class Commands : IDisposable {
     private void RegisterMain() {
         foreach (var command in MainCommands) {
             this.Plugin.CommandManager.AddHandler(command, new CommandInfo(this.MainCommand) {
-                HelpMessage = "Opens the main ExtraChat UI.",
+                HelpMessage = "打开 ExtraChat 主界面。使用 /extrachat server <url> 切换服务器。",
             });
         }
     }
@@ -53,7 +53,7 @@ internal class Commands : IDisposable {
             case "server": {
                 if (args.Length < 2) {
                     this.Plugin.ChatGui.Print(new XivChatEntry {
-                        Message = $"ExtraChat server: {this.Plugin.ConfigInfo.ServerUrl}",
+                        Message = $"ExtraChat 服务器：{this.Plugin.ConfigInfo.ServerUrl}",
                         Type = XivChatType.Notice,
                     });
                     return;
@@ -63,7 +63,7 @@ internal class Commands : IDisposable {
                 if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
                     (uri.Scheme != "ws" && uri.Scheme != "wss")) {
                     this.Plugin.ChatGui.Print(new XivChatEntry {
-                        Message = "Invalid URL. Must start with ws:// or wss://",
+                        Message = "无效的 URL，必须以 ws:// 或 wss:// 开头",
                         Type = XivChatType.Urgent,
                     });
                     return;
@@ -75,7 +75,7 @@ internal class Commands : IDisposable {
                 this.Plugin.Client.StartLoop();
 
                 this.Plugin.ChatGui.Print(new XivChatEntry {
-                    Message = $"ExtraChat server changed to {url}",
+                    Message = $"ExtraChat 服务器已切换为 {url}",
                     Type = XivChatType.Notice,
                 });
                 break;

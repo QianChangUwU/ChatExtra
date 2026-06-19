@@ -86,7 +86,7 @@ internal class ConfigInfo {
             order = (orderEntry.Key + 1).ToString();
         }
 
-        return $"ECLS [{order}]: {name}";
+        return $"EC [{order}]: {name}";
     }
 
     internal ChannelInfo GetOrInsertChannel(Guid id) {

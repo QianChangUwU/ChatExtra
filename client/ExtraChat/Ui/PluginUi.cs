@@ -84,17 +84,17 @@ internal class PluginUi : IDisposable {
         }
 
         if (!this.Plugin.ClientState.IsLoggedIn) {
-            ImGui.TextUnformatted("Please log in to a character.");
+            ImGui.TextUnformatted("请先登录角色。");
             ImGui.End();
             return;
         }
 
         if (ImGui.BeginTabBar("tabs")) {
-            if (ImGui.BeginTabItem("Linkshells")) {
+            if (ImGui.BeginTabItem("频道")) {
                 var status = this.Plugin.Client.Status;
-                ImGui.TextUnformatted($"Status: {status}");
+                ImGui.TextUnformatted($"状态: {status}");
                 ImGui.SameLine();
-                if (ImGuiUtil.IconButton(FontAwesomeIcon.Wifi, tooltip: "Reconnect") && !this.Busy) {
+                if (ImGuiUtil.IconButton(FontAwesomeIcon.Wifi, tooltip: "重新连接") && !this.Busy) {
                     this.Busy = true;
 
                     Task.Run(async () => {
@@ -120,12 +120,12 @@ internal class PluginUi : IDisposable {
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem("Settings")) {
+            if (ImGui.BeginTabItem("设置")) {
                 this.DrawSettings();
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem("Help")) {
+            if (ImGui.BeginTabItem("帮助")) {
                 this.DrawHelp();
                 ImGui.EndTabItem();
             }
@@ -139,7 +139,7 @@ internal class PluginUi : IDisposable {
     private void DrawHelp() {
         ImGui.PushTextWrapPos();
 
-        if (ImGui.Button("Reset tutorial")) {
+        if (ImGui.Button("重置引导")) {
             this.Plugin.ConfigInfo.TutorialStep = 0;
             this.Plugin.SaveConfig();
         }
@@ -151,12 +151,12 @@ internal class PluginUi : IDisposable {
         var anyChanged = false;
 
         if (ImGui.BeginTabBar("settings-tabs")) {
-            if (ImGui.BeginTabItem("General")) {
+            if (ImGui.BeginTabItem("通用")) {
                 this.DrawSettingsGeneral(ref anyChanged);
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem("Linkshells")) {
+            if (ImGui.BeginTabItem("频道")) {
                 this.DrawSettingsLinkshells(ref anyChanged);
                 ImGui.EndTabItem();
             }
@@ -171,8 +171,8 @@ internal class PluginUi : IDisposable {
     }
 
     private void DrawSettingsGeneral(ref bool anyChanged) {
-        anyChanged |= ImGui.Checkbox("Use native toasts", ref this.Plugin.Config.UseNativeToasts);
-        anyChanged |= ImGui.Checkbox("Add invite context menu item", ref this.Plugin.Config.ShowContextMenuItem);
+        anyChanged |= ImGui.Checkbox("使用系统通知", ref this.Plugin.Config.UseNativeToasts);
+        anyChanged |= ImGui.Checkbox("右键菜单添加邀请", ref this.Plugin.Config.ShowContextMenuItem);
         // ImGui.Spacing();
         //
         // ImGui.TextUnformatted("Default channel");
@@ -189,8 +189,8 @@ internal class PluginUi : IDisposable {
         // }
 
         if (this.Plugin.LocalPlayer is { } player) {
-            if (ImGui.TreeNodeEx($"Settings for {player.Name}{CrossWorld}{player.HomeWorld.Value.Name}")) {
-                if (ImGui.Checkbox("Allow receiving invites", ref this.Plugin.ConfigInfo.AllowInvites)) {
+            if (ImGui.TreeNodeEx($"{player.Name}{CrossWorld}{player.HomeWorld.Value.Name} 的设置")) {
+                if (ImGui.Checkbox("允许接收邀请", ref this.Plugin.ConfigInfo.AllowInvites)) {
                     anyChanged = true;
                     Task.Run(async () => await this.Plugin.Client.AllowInvitesToast(this.Plugin.ConfigInfo.AllowInvites));
                 }
@@ -199,15 +199,15 @@ internal class PluginUi : IDisposable {
             }
         }
 
-        if (this.Plugin.Client.Status == Client.State.Connected && ImGui.TreeNodeEx("Delete account")) {
+        if (this.Plugin.Client.Status == Client.State.Connected && ImGui.TreeNodeEx("删除账户")) {
             ImGui.PushTextWrapPos();
 
             if (this.Plugin.Client.Channels.Count > 0) {
-                ImGui.TextUnformatted("You must leave or disband all ExtraChat linkshells you are currently in before you can delete your account.");
+                ImGui.TextUnformatted("删除账户前，必须先退出或解散所有 ExtraChat 频道。");
             } else {
-                ImGui.TextUnformatted("Clicking the button below will permanently and irreversibly delete your account from ExtraChat's servers.");
+                ImGui.TextUnformatted("点击下方按钮将永久删除你在 ExtraChat 服务器的账号。此操作不可撤销。");
 
-                if (ImGui.Button("Delete account##actual-delete")) {
+                if (ImGui.Button("删除账号")) {
                     Task.Run(async () => await this.Plugin.Client.DeleteAccountToast());
                 }
             }
@@ -234,7 +234,7 @@ internal class PluginUi : IDisposable {
             if (ImGui.CollapsingHeader($"{name}###{id}-settings")) {
                 ImGui.PushID($"{id}-settings");
 
-                ImGui.TextUnformatted("Number");
+                ImGui.TextUnformatted("编号");
                 channelOrder.TryGetValue(id, out var refOrder);
                 var old = refOrder;
                 refOrder += 1;
@@ -256,7 +256,7 @@ internal class PluginUi : IDisposable {
 
                 ImGui.Spacing();
 
-                if (ImGuiUtil.IconButton(FontAwesomeIcon.Undo, "colour-reset", "Reset")) {
+                if (ImGuiUtil.IconButton(FontAwesomeIcon.Undo, "colour-reset", "重置")) {
                     anyChanged = true;
                     this.Plugin.ConfigInfo.ChannelColors.Remove(id);
                 }
@@ -275,7 +275,7 @@ internal class PluginUi : IDisposable {
 
                 ImGui.SameLine();
 
-                ImGui.TextUnformatted("Linkshell colour");
+                ImGui.TextUnformatted("频道颜色");
 
                 if (ImGui.BeginPopup(colourPickerId)) {
                     var i = 0;
@@ -305,7 +305,7 @@ internal class PluginUi : IDisposable {
                     marker = string.Empty;
                 }
 
-                ImGui.TextUnformatted("Chat marker");
+                ImGui.TextUnformatted("聊天标记");
                 ImGui.SetNextItemWidth(-1);
                 if (ImGui.InputTextWithHint("##marker", hint, ref marker, 16)) {
                     anyChanged = true;
@@ -353,7 +353,7 @@ internal class PluginUi : IDisposable {
         var (name, world) = this.InviteInfo.Value;
 
         var open = true;
-        if (!ImGui.Begin($"Invite: {name}###ec-linkshell-invite", ref open, ImGuiWindowFlags.AlwaysAutoResize)) {
+        if (!ImGui.Begin($"邀请: {name}###ec-linkshell-invite", ref open, ImGuiWindowFlags.AlwaysAutoResize)) {
             if (!open) {
                 this.InviteInfo = null;
             }
@@ -370,7 +370,7 @@ internal class PluginUi : IDisposable {
             ImGui.SetWindowPos(ImGui.GetMousePos());
         }
 
-        var preview = this._inviteId == null ? "Choose a linkshell" : "???";
+        var preview = this._inviteId == null ? "选择一个频道" : "???";
         if (this._inviteId != null && this.Plugin.ConfigInfo.Channels.TryGetValue(this._inviteId.Value, out var selectedInfo)) {
             preview = selectedInfo.Name;
         }
@@ -393,7 +393,7 @@ internal class PluginUi : IDisposable {
             ImGui.EndCombo();
         }
 
-        if (ImGui.Button("Invite") && this._inviteId != null) {
+        if (ImGui.Button("邀请") && this._inviteId != null) {
             var id = this._inviteId.Value;
             this._inviteId = null;
 
@@ -412,9 +412,9 @@ internal class PluginUi : IDisposable {
         var state = this.Plugin.Client.Status;
         if (state == Client.State.NotAuthenticated) {
             if (this.Plugin.ConfigInfo.Key != null) {
-                ImGui.TextUnformatted("Please wait...");
+                ImGui.TextUnformatted("请稍候...");
             } else {
-                if (ImGui.Button($"Register {player.Name}") && !this.Busy) {
+                if (ImGui.Button($"注册 {player.Name}") && !this.Busy) {
                     this.Busy = true;
                     Task.Run(async () => {
                         var challenge = await this.Plugin.Client.GetChallenge();
@@ -423,36 +423,36 @@ internal class PluginUi : IDisposable {
                 }
 
                 ImGui.PushTextWrapPos();
-                ImGui.TextUnformatted("ExtraChat is a third-party service that allows for functionally unlimited extra linkshells that work across data centres.");
-                ImGui.TextUnformatted("In order to use ExtraChat, characters must be registered and verified using their Lodestone profile.");
-                ImGui.TextUnformatted("ExtraChat stores your character's name, home world, and Lodestone ID, as well as what ExtraChat linkshells your character is a part of and has been invited to.");
-                ImGui.TextUnformatted("Messages and linkshell names are end-to-end encrypted; the server cannot decrypt them and does not store messages.");
-                ImGui.TextUnformatted("In the event of a legal subpoena, ExtraChat will provide any information available to the legal system.");
+                ImGui.TextUnformatted("ExtraChat 是一个第三方服务，提供跨数据中心的、功能上无限制的额外聊天频道。");
+                ImGui.TextUnformatted("使用 ExtraChat 需要在英雄榜上注册和验证角色。");
+                ImGui.TextUnformatted("ExtraChat 会存储你的角色名、所属服务器和英雄榜 ID，以及你的角色加入和受邀的频道信息。");
+                ImGui.TextUnformatted("消息和频道名是端到端加密的，服务器无法解密它们，也不会存储消息内容。");
+                ImGui.TextUnformatted("在法律传票的情况下，ExtraChat 将向法律系统提供其可获得的信息。");
                 ImGui.PopTextWrapPos();
             }
         }
 
         if (state == Client.State.RetrievingChallenge) {
-            ImGui.TextUnformatted("Waiting...");
+            ImGui.TextUnformatted("等待中...");
         }
 
         if (state == Client.State.WaitingForVerification) {
             ImGui.PushTextWrapPos();
             if (this._challenge == null) {
-                ImGui.TextUnformatted("Waiting for verification but no challenge present. This is a bug.");
+                ImGui.TextUnformatted("等待验证，但未收到验证码。这是一个 bug。");
             } else {
-                ImGui.TextUnformatted("Copy the challenge below and save it in your Lodestone profile. After saving, click the button below to verify. After successfully verifying, you can delete the challenge from your profile if desired.");
+                ImGui.TextUnformatted("复制下方的验证码，粘贴到你的英雄榜个人资料中并保存。保存后点击「验证」按钮完成验证。验证成功后可以删除验证码。");
 
                 ImGui.SetNextItemWidth(-1);
                 ImGui.InputText("##challenge", ref this._challenge, this._challenge.Length, ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.ReadOnly);
 
-                if (ImGui.Button("Copy")) {
+                if (ImGui.Button("复制")) {
                     ImGui.SetClipboardText(this._challenge);
                 }
 
                 ImGui.SameLine();
 
-                if (ImGui.Button("Open profile")) {
+                if (ImGui.Button("打开英雄榜")) {
                     var region = this.Plugin.LocalPlayer?.HomeWorld.Value.DataCenter.Value.Region.RowId ?? 2;
                     var sub = this.Plugin.ClientState.ClientLanguage switch {
                         ClientLanguage.Japanese => "jp",
@@ -471,7 +471,7 @@ internal class PluginUi : IDisposable {
 
                 ImGui.SameLine();
 
-                if (ImGui.Button("Verify") && !this.Busy) {
+                if (ImGui.Button("验证") && !this.Busy) {
                     this.Busy = true;
                     Task.Run(async () => {
                         var key = await this.Plugin.Client.Register();

@@ -151,6 +151,9 @@ async fn main() -> Result<()> {
     let (quit_tx, mut quit_rx) = tokio::sync::mpsc::channel(1);
     let (announce_tx, mut announce_rx) = tokio::sync::mpsc::channel(1);
 
+    // keep a sender alive to prevent quit_rx from returning None when stdin closes
+    let _quit_keep = quit_tx.clone();
+
     std::thread::spawn(move || {
         let mut editor = match rustyline::Editor::<(), DefaultHistory>::new() {
             Ok(e) => e,

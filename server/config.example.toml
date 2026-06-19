@@ -1,0 +1,12 @@
+[server]
+address = '0.0.0.0:8080'
+
+[database]
+path = './database.sqlite'
+
+# Optional: InfluxDB metrics
+# [influx]
+# url = "http://localhost:8086"
+# org = "my-org"
+# bucket = "extrachat"
+# token = "my-token"

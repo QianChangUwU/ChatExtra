@@ -12,22 +12,18 @@ use crate::{types::protocol::FailureReason, util::{hash_key, send, world_from_id
 pub async fn register(state: Arc<RwLock<State>>, _client_state: Arc<RwLock<ClientState>>, conn: &mut WsStream, number: u32, req: RegisterRequest) -> Result<()> {
     let scraper = LodestoneScraper::default();
 
-    let world = world_from_id(req.world)
-        .context("invalid world id")?;
-
-    // look up character
+    // look up character by name on lodestone (search all worlds)
     let mut page = 1;
     let character = loop {
         let search = scraper.character_search()
             .name(&req.name)
-            .world(world)
             .page(page)
             .send()
             .await?;
         let chara = search
             .results
             .into_iter()
-            .find(|c| c.name == req.name && Some(c.world) == world_from_id(req.world));
+            .find(|c| c.name == req.name);
         if chara.is_some() {
             break chara;
         }

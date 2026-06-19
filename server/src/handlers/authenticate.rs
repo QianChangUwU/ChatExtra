@@ -6,7 +6,7 @@ use chrono::{Duration, Utc};
 use log::trace;
 use tokio::sync::RwLock;
 
-use crate::{AuthenticateRequest, AuthenticateResponse, ClientState, State, User, util, World, WsStream};
+use crate::{AuthenticateRequest, AuthenticateResponse, ClientState, State, User, util, WsStream};
 
 pub async fn authenticate(state: Arc<RwLock<State>>, client_state: Arc<RwLock<ClientState>>, conn: &mut WsStream, number: u32, req: AuthenticateRequest) -> anyhow::Result<()> {
     if client_state.read().await.user.is_some() {
@@ -30,7 +30,8 @@ pub async fn authenticate(state: Arc<RwLock<State>>, client_state: Arc<RwLock<Cl
         None => return util::send(conn, number, AuthenticateResponse::error("invalid key")).await,
     };
 
-    let world = World::from_str(&user.world).map_err(|_| anyhow::anyhow!("invalid world in db"))?;
+    let world = util::world_from_str(&user.world)
+        .context("invalid world in db")?;
 
     if let Some(old_client_state) = state.read().await.clients.get(&(user.lodestone_id as u64)) {
         let mut lock = old_client_state.write().await;

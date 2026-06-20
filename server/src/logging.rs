@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use lazy_static::lazy_static;
-use log::{Level, LevelFilter};
+use log::Level;
 use parking_lot::RwLock;
 use regex::Regex;
 

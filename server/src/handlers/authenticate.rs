@@ -33,7 +33,7 @@ pub async fn authenticate(state: Arc<RwLock<State>>, client_state: Arc<RwLock<Cl
 
     let (raw_id, world_name) = util::parse_stored_world(&user.world);
     let world = match raw_id {
-        Some(id) => {
+        Some(_) => {
             World::Ravana
         }
         None => util::world_from_str(&world_name).unwrap_or(World::Ravana),

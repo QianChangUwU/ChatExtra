@@ -84,10 +84,11 @@ pub async fn promote(state: Arc<RwLock<State>>, client_state: Arc<RwLock<ClientS
             .await
             .context("could not update user rank")?;
 
+        let user_world = user.world_id();
         crate::util::send_to_all(&state, req.channel, 0, MemberChangeResponse {
             channel: req.channel,
             name: user.name,
-            world: user.world_id(),
+            world: user_world,
             kind: MemberChangeKind::Promote {
                 rank: Rank::Moderator,
             },

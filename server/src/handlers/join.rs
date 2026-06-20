@@ -30,10 +30,11 @@ pub async fn join(state: Arc<RwLock<State>>, client_state: Arc<RwLock<ClientStat
         return send(conn, number, ErrorResponse::new(req.channel, "you were not invited to that channel")).await;
     }
 
+    let user_world = user.world_id();
     crate::util::send_to_all(&state, req.channel, 0, MemberChangeResponse {
         channel: req.channel,
         name: user.name,
-        world: user.world_id(),
+        world: user_world,
         kind: MemberChangeKind::Join,
     }).await?;
 

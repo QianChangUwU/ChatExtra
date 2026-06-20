@@ -71,13 +71,14 @@ pub async fn invite(state: Arc<RwLock<State>>, client_state: Arc<RwLock<ClientSt
         return crate::util::send(conn, number, ErrorResponse::new(req.channel, "already invited")).await;
     }
 
+    let user_world = user.world_id();
     crate::util::send_to_all(&state, req.channel, 0, MemberChangeResponse {
         channel: req.channel,
         name: req.name.clone(),
         world: req.world,
         kind: MemberChangeKind::Invite {
             inviter: user.name,
-            inviter_world: user.world_id(),
+            inviter_world: user_world,
         },
     }).await?;
 

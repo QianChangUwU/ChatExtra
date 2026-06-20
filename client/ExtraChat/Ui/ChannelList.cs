@@ -26,7 +26,7 @@ internal class ChannelList {
 
         this._worlds = this.Plugin.DataManager.GetExcelSheet<World>()!
             .GroupBy(row => row.DataCenter.Value!)
-            .Where(grouping => grouping.Key.Region.RowId != 0)
+            .Where(grouping => grouping.Key.Region.RowId == 4)
             .OrderBy(grouping => grouping.Key.Region.RowId)
             .ThenBy(grouping => grouping.Key.Name.ExtractText())
             .Select(grouping => (grouping.Key.Name.ExtractText(), grouping.OrderBy(row => row.Name.ExtractText()).ToList()))

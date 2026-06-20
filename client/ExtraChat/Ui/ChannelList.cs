@@ -32,8 +32,7 @@ internal class ChannelList {
         this.Plugin = plugin;
 
         this._worlds = this.Plugin.DataManager.GetExcelSheet<World>()!
-            .Where(row => row.IsPublic &&
-                          !row.Name.ExtractText().Contains("s-") &&
+            .Where(row => !row.Name.ExtractText().Contains("s-") &&
                           !CnDataCenterNames.Contains(row.Name.ExtractText()))
             .GroupBy(row => row.DataCenter.Value!)
             .Where(grouping => CnDataCenterNames.Contains(grouping.Key.Name.ExtractText()))

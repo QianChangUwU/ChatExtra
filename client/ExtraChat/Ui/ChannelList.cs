@@ -25,7 +25,6 @@ internal class ChannelList {
         this.Plugin = plugin;
 
         this._worlds = this.Plugin.DataManager.GetExcelSheet<World>()!
-            .Where(row => row.IsPublic)
             .GroupBy(row => row.DataCenter.Value!)
             .Where(grouping => grouping.Key.Region.RowId != 0)
             .OrderBy(grouping => grouping.Key.Region.RowId)

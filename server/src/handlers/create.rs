@@ -23,10 +23,6 @@ pub async fn create(state: Arc<RwLock<State>>, client_state: Arc<RwLock<ClientSt
         .context("could not create channel")?;
 
     let lodestone_id = client_state.read().await.user.as_ref().map(|u| u.lodestone_id as i64).unwrap_or(0);
-    if lodestone_id == 0 {
-        // should not be possible
-        return Ok(());
-    }
 
     let rank = Rank::Admin.as_u8();
     sqlx::query!(

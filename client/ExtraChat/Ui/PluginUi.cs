@@ -424,8 +424,7 @@ internal class PluginUi : IDisposable {
 
                 ImGui.PushTextWrapPos();
                 ImGui.TextUnformatted("ExtraChat 是一个第三方服务，提供跨数据中心的、功能上无限制的额外聊天频道。");
-                ImGui.TextUnformatted("使用 ExtraChat 需要在英雄榜上注册和验证角色。");
-                ImGui.TextUnformatted("ExtraChat 会存储你的角色名、所属服务器和英雄榜 ID，以及你的角色加入和受邀的频道信息。");
+                ImGui.TextUnformatted("ExtraChat 会存储你的角色名、所属服务器，以及你的角色加入和受邀的频道信息。");
                 ImGui.TextUnformatted("消息和频道名是端到端加密的，服务器无法解密它们，也不会存储消息内容。");
                 ImGui.TextUnformatted("在法律传票的情况下，ExtraChat 将向法律系统提供其可获得的信息。");
                 ImGui.PopTextWrapPos();
@@ -441,7 +440,7 @@ internal class PluginUi : IDisposable {
             if (this._challenge == null) {
                 ImGui.TextUnformatted("等待验证，但未收到验证码。这是一个 bug。");
             } else {
-                ImGui.TextUnformatted("复制下方的验证码，粘贴到你的英雄榜个人资料中并保存。保存后点击「验证」按钮完成验证。验证成功后可以删除验证码。");
+                ImGui.TextUnformatted("直接点击「验证」按钮即可完成注册（已跳过英雄榜验证）。");
 
                 ImGui.SetNextItemWidth(-1);
                 ImGui.InputText("##challenge", ref this._challenge, this._challenge.Length, ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.ReadOnly);
@@ -452,19 +451,9 @@ internal class PluginUi : IDisposable {
 
                 ImGui.SameLine();
 
-                if (ImGui.Button("打开英雄榜")) {
-                    var region = this.Plugin.LocalPlayer?.HomeWorld.Value.DataCenter.Value.Region.RowId ?? 2;
-                    var sub = this.Plugin.ClientState.ClientLanguage switch {
-                        ClientLanguage.Japanese => "jp",
-                        ClientLanguage.English when region != 2 => "eu",
-                        ClientLanguage.English => "na",
-                        ClientLanguage.German => "de",
-                        ClientLanguage.French => "fr",
-                        _ => "na",
-                    };
-
+                if (ImGui.Button("打开石之家")) {
                     Process.Start(new ProcessStartInfo {
-                        FileName = $"https://{sub}.finalfantasyxiv.com/lodestone/my/setting/profile/",
+                        FileName = "https://ff.web.sdo.com/",
                         UseShellExecute = true,
                     });
                 }

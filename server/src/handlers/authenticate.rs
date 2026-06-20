@@ -1,9 +1,8 @@
-use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::Context;
 use chrono::{Duration, Utc};
-use log::trace;
+use log::{trace, warn};
 use tokio::sync::RwLock;
 
 use lodestone_scraper::lodestone_parser::ffxiv_types::World;

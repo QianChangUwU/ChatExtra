@@ -52,6 +52,7 @@ internal class Client : IDisposable {
     internal Client(Plugin plugin) {
         this.Plugin = plugin;
         this.WebSocket = new ClientWebSocket();
+        this.WebSocket.Options.Proxy = new System.Net.WebProxy();
         this.KeyPair = SodiumKeyExchange.GenerateKeyPair();
 
         this.Plugin.ClientState.Login += this.Login;

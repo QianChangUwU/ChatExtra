@@ -1,6 +1,7 @@
 #![feature(try_blocks)]
 
 use std::collections::HashMap;
+use std::io::IsTerminal;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -165,57 +166,61 @@ async fn main() -> Result<()> {
     // keep a sender alive to prevent quit_rx from returning None when stdin closes
     let _quit_keep = quit_tx.clone();
 
-    std::thread::spawn(move || {
-        let mut editor = match rustyline::Editor::<(), DefaultHistory>::new() {
-            Ok(e) => e,
-            Err(e) => {
-                error!("error creating line editor: {:#?}", e);
-                return;
-            }
-        };
-
-        for line in editor.iter("> ") {
-            let line = match line {
-                Ok(l) => l,
-                Err(rustyline::error::ReadlineError::Interrupted) => {
-                    quit_tx.blocking_send(()).ok();
-                    return;
-                }
+    if std::io::stdin().is_terminal() {
+        std::thread::spawn(move || {
+            let mut editor = match rustyline::Editor::<(), DefaultHistory>::new() {
+                Ok(e) => e,
                 Err(e) => {
-                    error!("error reading input: {:#?}", e);
-                    continue;
+                    error!("error creating line editor: {:#?}", e);
+                    return;
                 }
             };
 
-            let command: Vec<_> = line.splitn(2, ' ').collect();
-            match command[0] {
-                "exit" | "quit" => {
-                    quit_tx.blocking_send(()).ok();
-                    return;
-                }
-                "announce" | "say" => {
-                    if command.len() == 2 {
-                        let msg = command[1].to_string();
-                        announce_tx.blocking_send(msg).ok();
-                    } else {
-                        info!("usage: announce <message>");
+            for line in editor.iter("> ") {
+                let line = match line {
+                    Ok(l) => l,
+                    Err(rustyline::error::ReadlineError::Interrupted) => {
+                        quit_tx.blocking_send(()).ok();
+                        return;
                     }
-                }
-                "log" | "level" => {
-                    if command.len() == 2 {
-                        match Level::from_str(command[1]) {
-                            Ok(level) => *logging::LOG_LEVEL.write() = level,
-                            Err(_) => warn!("invalid log level"),
+                    Err(e) => {
+                        error!("error reading input: {:#?}", e);
+                        continue;
+                    }
+                };
+
+                let command: Vec<_> = line.splitn(2, ' ').collect();
+                match command[0] {
+                    "exit" | "quit" => {
+                        quit_tx.blocking_send(()).ok();
+                        return;
+                    }
+                    "announce" | "say" => {
+                        if command.len() == 2 {
+                            let msg = command[1].to_string();
+                            announce_tx.blocking_send(msg).ok();
+                        } else {
+                            info!("usage: announce <message>");
                         }
-                    } else {
-                        info!("usage: log <trace|debug|info|warn|error>");
                     }
+                    "log" | "level" => {
+                        if command.len() == 2 {
+                            match Level::from_str(command[1]) {
+                                Ok(level) => *logging::LOG_LEVEL.write() = level,
+                                Err(_) => warn!("invalid log level"),
+                            }
+                        } else {
+                            info!("usage: log <trace|debug|info|warn|error>");
+                        }
+                    }
+                    "" => {}
+                    x => warn!("unknown command: {}", x),
                 }
-                "" => {}
-                x => warn!("unknown command: {}", x),
             }
-        }
-    });
+        });
+    } else {
+        info!("stdin is not a terminal, skipping interactive CLI");
+    }
 
     {
         let state = Arc::clone(&state);

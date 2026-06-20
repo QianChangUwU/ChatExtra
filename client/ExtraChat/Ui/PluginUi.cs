@@ -173,6 +173,7 @@ internal class PluginUi : IDisposable {
     private void DrawSettingsGeneral(ref bool anyChanged) {
         anyChanged |= ImGui.Checkbox("使用系统通知", ref this.Plugin.Config.UseNativeToasts);
         anyChanged |= ImGui.Checkbox("右键菜单添加邀请", ref this.Plugin.Config.ShowContextMenuItem);
+        anyChanged |= ImGui.Checkbox("使用系统代理", ref this.Plugin.ConfigInfo.UseSystemProxy);
         // ImGui.Spacing();
         //
         // ImGui.TextUnformatted("Default channel");

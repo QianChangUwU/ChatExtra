@@ -44,6 +44,7 @@ internal class ConfigInfo {
     public Dictionary<Guid, XivChatType> ChannelChannels = new();
     public int TutorialStep;
     public bool AllowInvites = true;
+    public bool UseSystemProxy = false;
 
     internal string GetName(Guid id) => this.Channels.TryGetValue(id, out var channel)
         ? channel.Name

@@ -54,7 +54,7 @@ internal class Client : IDisposable {
     internal Client(Plugin plugin) {
         this.Plugin = plugin;
         this.WebSocket = new ClientWebSocket();
-        this.WebSocket.Options.Proxy = new System.Net.WebProxy();
+        this.ApplyProxySettings();
         this.KeyPair = SodiumKeyExchange.GenerateKeyPair();
 
         this.Plugin.ClientState.Login += this.Login;
@@ -116,6 +116,10 @@ internal class Client : IDisposable {
         this._versionCheckCts?.Cancel();
         this._versionCheckCts?.Dispose();
         this._versionCheckCts = null;
+    }
+
+    private void ApplyProxySettings() {
+        this.WebSocket.Options.Proxy = this.Plugin.ConfigInfo.UseSystemProxy ? null : new System.Net.WebProxy();
     }
 
     internal void StartLoop() {
@@ -605,6 +609,7 @@ internal class Client : IDisposable {
         // If the websocket is closed, we need to reconnect
         this.WebSocket.Dispose();
         this.WebSocket = new ClientWebSocket();
+        this.ApplyProxySettings();
 
         this.Status = State.Connecting;
         await this.Connect();

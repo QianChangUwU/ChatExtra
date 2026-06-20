@@ -34,12 +34,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract version from csproj
+      - name: Extract version from VERSION file
         id: get-version
         run: |
-          VERSION=$(grep -oP '<Version>\K[^<]+' client/ExtraChat/ExtraChat.csproj | head -1)
+          VERSION=$(head -1 VERSION | tr -d '\r' | xargs)
           if [ -z "$VERSION" ]; then
-            echo "Error: Could not extract version from csproj"
+            echo "Error: Could not extract version from VERSION file"
             exit 1
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT

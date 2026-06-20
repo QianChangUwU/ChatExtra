@@ -8,4 +8,5 @@ pub struct VersionRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionResponse {
     pub version: u32,
+    pub required_version: String,
 }

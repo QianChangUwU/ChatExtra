@@ -13,6 +13,13 @@ namespace ExtraChat.Ui;
 internal class ChannelList {
     private Plugin Plugin { get; }
 
+    private static readonly HashSet<string> CnDataCenterNames = new() {
+        "陆行鸟",
+        "莫古力",
+        "猫小胖",
+        "豆豆柴",
+    };
+
     private readonly List<(string, List<World>)> _worlds;
 
     private string _createName = string.Empty;
@@ -26,9 +33,8 @@ internal class ChannelList {
 
         this._worlds = this.Plugin.DataManager.GetExcelSheet<World>()!
             .GroupBy(row => row.DataCenter.Value!)
-            .Where(grouping => grouping.Key.Region.RowId == 4)
-            .OrderBy(grouping => grouping.Key.Region.RowId)
-            .ThenBy(grouping => grouping.Key.Name.ExtractText())
+            .Where(grouping => CnDataCenterNames.Contains(grouping.Key.Name.ExtractText()))
+            .OrderBy(grouping => grouping.Key.Name.ExtractText())
             .Select(grouping => (grouping.Key.Name.ExtractText(), grouping.OrderBy(row => row.Name.ExtractText()).ToList()))
             .ToList();
     }
@@ -168,9 +174,7 @@ internal class ChannelList {
             rank = Rank.Member;
         }
 
-        ImGui.PushFont(UiBuilder.IconFont);
-        var selected = ImGui.Selectable($"{order}. {rank.Symbol()}{name}###{id}", this._selectedChannel == id);
-        ImGui.PopFont();
+        var selected = ImGui.Selectable($"{order}. {rank.Symbol()} {name}###{id}", this._selectedChannel == id);
         if (selected) {
             this._selectedChannel = id;
 
@@ -328,11 +332,7 @@ internal class ChannelList {
             }
 
             try {
-                ImGui.PushFont(UiBuilder.IconFont);
-                ImGui.TextUnformatted($"{member.Rank.Symbol()}");
-                ImGui.PopFont();
-                ImGui.SameLine(0, 0);
-                ImGui.TextUnformatted($"{member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}");
+                ImGui.TextUnformatted($"{member.Rank.Symbol()} {member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}");
             } finally {
                 if (!member.Online) {
                     ImGui.PopStyleColor();

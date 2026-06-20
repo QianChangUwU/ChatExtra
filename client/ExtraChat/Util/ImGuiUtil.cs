@@ -38,16 +38,16 @@ internal static class ImGuiUtil {
             "Click on this linkshell to see the member list.",
         },
         [4] = new[] {
-            "Members in a linkshell",
+            "频道成员",
 
-            "Inside the member list, each member is shown with an optional symbol indicating their rank.",
+            "成员列表中，每个成员前面会显示其身份标记。",
             null,
-            "Admins have this symbol: ★",
-            "Moderators have this symbol: ☆",
-            "Normal members have no symbol.",
-            "Invited members have this symbol: ?",
+            "[管理员] = 频道管理员",
+            "[队长] = 频道的队长，可以踢人和邀请",
+            "[组员] = 普通成员",
+            "[待确认] = 待确认的受邀者",
             null,
-            "Members also appear dimmed when they are offline.",
+            "离线成员会以灰色显示。",
         },
         [5] = new[] {
             "Managing members in a linkshell",

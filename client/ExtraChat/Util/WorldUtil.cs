@@ -5,6 +5,13 @@ using Lumina.Excel.Sheets;
 namespace ExtraChat.Util;
 
 internal static class WorldUtil {
+    private static readonly HashSet<string> CnDataCenterNames = new() {
+        "陆行鸟",
+        "莫古力",
+        "猫小胖",
+        "豆豆柴",
+    };
+
     private static readonly Dictionary<ushort, string> WorldNames = new();
     private static IPlayerCharacter? _localPlayer;
 
@@ -21,7 +28,7 @@ internal static class WorldUtil {
         }
 
         foreach (var world in worlds) {
-            if (world.DataCenter.ValueNullable?.Region.RowId != 4) {
+            if (world.DataCenter.ValueNullable?.Name.ExtractText() is not { } dcName || !CnDataCenterNames.Contains(dcName)) {
                 continue;
             }
 

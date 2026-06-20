@@ -7,4 +7,7 @@ namespace ExtraChat.Protocol;
 public class VersionRequest {
     [Key(0)]
     public uint Version;
+    
+    [Key(1)]
+    public string ClientVersion;
 }

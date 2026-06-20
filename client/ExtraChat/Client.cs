@@ -49,6 +49,8 @@ internal class Client : IDisposable {
     internal Dictionary<Guid, Channel> InvitedChannels { get; } = new();
     internal Dictionary<Guid, Rank> ChannelRanks { get; } = new();
 
+    private CancellationTokenSource? _versionCheckCts;
+
     internal Client(Plugin plugin) {
         this.Plugin = plugin;
         this.WebSocket = new ClientWebSocket();
@@ -68,6 +70,8 @@ internal class Client : IDisposable {
         this.Plugin.ClientState.Logout -= this.Logout;
 
         this._active = false;
+        this._versionCheckCts?.Cancel();
+        this._versionCheckCts?.Dispose();
         this.WebSocket.Dispose();
         this._waitersSemaphore.Dispose();
     }
@@ -86,8 +90,32 @@ internal class Client : IDisposable {
 
     internal void StopLoop() {
         this._active = false;
+        this._versionCheckCts?.Cancel();
         this.WebSocket.Abort();
         this.Status = State.Disconnected;
+    }
+
+    private void StartVersionMismatchNotifications(string required, string current) {
+        this.StopVersionMismatchNotifications();
+        this._versionCheckCts = new CancellationTokenSource();
+        var token = this._versionCheckCts.Token;
+
+        Task.Run(async () => {
+            while (!token.IsCancellationRequested) {
+                this.Plugin.ShowError($"ExtraChat 版本不匹配，请更新插件 (当前: {current}, 需更新至: {required})");
+                try {
+                    await Task.Delay(TimeSpan.FromMinutes(30), token);
+                } catch (OperationCanceledException) {
+                    break;
+                }
+            }
+        }, token);
+    }
+
+    private void StopVersionMismatchNotifications() {
+        this._versionCheckCts?.Cancel();
+        this._versionCheckCts?.Dispose();
+        this._versionCheckCts = null;
     }
 
     internal void StartLoop() {
@@ -161,7 +189,18 @@ internal class Client : IDisposable {
 
     internal Task AuthenticateAndList() {
         return Task.Run(async () => {
-            await this.SendVersion();
+            var requiredVersion = await this.SendVersion();
+
+            if (requiredVersion is { } required) {
+                var v = typeof(Plugin).Assembly.GetName().Version;
+                var currentVersion = $"{v.Major}.{v.Minor}.{v.Build}.{v.Revision:D2}";
+
+                if (required != currentVersion) {
+                    this.StartVersionMismatchNotifications(required, currentVersion);
+                } else {
+                    this.StopVersionMismatchNotifications();
+                }
+            }
 
             if (await this.Authenticate()) {
                 this._wasConnected = true;
@@ -344,10 +383,19 @@ internal class Client : IDisposable {
         }
     }
 
-    internal async Task SendVersion() {
-        await this.QueueMessage(new RequestKind.Version(new VersionRequest {
+    internal async Task<string?> SendVersion() {
+        var v = typeof(Plugin).Assembly.GetName().Version;
+        var versionStr = $"{v.Major}.{v.Minor}.{v.Build}.{v.Revision:D2}";
+
+        var response = await this.QueueMessageAndWait(new RequestKind.Version(new VersionRequest {
             Version = 1,
+            ClientVersion = versionStr,
         }));
+
+        return response switch {
+            ResponseKind.Version { Response: var resp } => resp.RequiredVersion,
+            _ => null,
+        };
     }
 
     internal async Task<bool> Authenticate() {
@@ -832,10 +880,10 @@ internal class Client : IDisposable {
 
                 if (isSelf) {
                     this.ChannelRanks[resp.Channel] = promote.Rank;
-                    this.Plugin.ShowInfo($"你在 \"{channelName}\" 中{verb}{promote.Rank}");
+                    this.Plugin.ShowInfo($"你在 \"{channelName}\" 中{verb}{promote.Rank.Symbol()}");
                 } else {
                     var worldName = WorldUtil.WorldName(resp.World);
-                    this.Plugin.ShowInfo($"{resp.Name}{PluginUi.CrossWorld}{worldName} 在 \"{channelName}\" 中{verb}{promote.Rank}");
+                    this.Plugin.ShowInfo($"{resp.Name}{PluginUi.CrossWorld}{worldName} 在 \"{channelName}\" 中{verb}{promote.Rank.Symbol()}");
                 }
 
                 break;

@@ -410,6 +410,7 @@ dependencies = [
  "futures-util",
  "hex",
  "lazy_static",
+ "libsqlite3-sys",
  "lodestone-scraper",
  "log",
  "mimalloc",

@@ -254,7 +254,7 @@ async fn main() -> Result<()> {
             tokio::select! {
                 accept = server.accept() => {
                     let (sock, addr) = accept.context("could not accept socket connection")?;
-                    info!("new connection from {addr}");
+                    debug!("new connection from {addr}");
                     let state = Arc::clone(&state);
                     tokio::task::spawn(async move {
                         let conn = match tokio_tungstenite::accept_async(sock).await {

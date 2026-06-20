@@ -29,7 +29,9 @@ internal static class WorldUtil {
 
         foreach (var world in worlds) {
             var worldName = world.Name.ExtractText();
-            if (world.DataCenter.ValueNullable?.Name.ExtractText() is not { } ||
+            if (world.DataCenter.ValueNullable?.Name.ExtractText() is not { } dcName ||
+                dcName == "Unknown" ||
+                dcName == "未知" ||
                 worldName.Contains("s-") ||
                 CnDataCenterNames.Contains(worldName))
             {

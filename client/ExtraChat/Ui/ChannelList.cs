@@ -32,7 +32,9 @@ internal class ChannelList {
         this.Plugin = plugin;
 
         this._worlds = this.Plugin.DataManager.GetExcelSheet<World>()!
-            .Where(row => row.DataCenter.ValueNullable != null &&
+            .Where(row => row.DataCenter.ValueNullable is { } dc &&
+                          dc.Name.ExtractText() != "Unknown" &&
+                          dc.Name.ExtractText() != "未知" &&
                           !row.Name.ExtractText().Contains("s-") &&
                           !CnDataCenterNames.Contains(row.Name.ExtractText()))
             .GroupBy(row => row.DataCenter.Value!)

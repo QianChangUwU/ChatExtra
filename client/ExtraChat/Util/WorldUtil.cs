@@ -15,10 +15,6 @@ internal static class WorldUtil {
         }
 
         foreach (var world in worlds) {
-            if (!world.IsPublic) {
-                continue;
-            }
-
             WorldNames[(ushort) world.RowId] = world.Name.ExtractText();
         }
     }

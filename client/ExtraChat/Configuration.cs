@@ -35,7 +35,7 @@ internal class Configuration : IPluginConfiguration {
 [Serializable]
 internal class ConfigInfo {
     public string? Key;
-    public string ServerUrl = "wss://extrachat.annaclemens.io/";
+    public string ServerUrl = "wss://8.134.86.130/";
     public Dictionary<Guid, ChannelInfo> Channels = new();
     public Dictionary<int, Guid> ChannelOrder = new();
     public Dictionary<string, Guid> Aliases = new();

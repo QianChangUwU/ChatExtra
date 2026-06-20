@@ -120,6 +120,7 @@ internal class Client : IDisposable {
 
     private void ApplyProxySettings() {
         this.WebSocket.Options.Proxy = null;
+        this.WebSocket.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
     }
 
     internal void StartLoop() {

@@ -18,9 +18,14 @@ use tokio::{
 use crate::State;
 
 pub fn spawn(state: Arc<RwLock<State>>, mut rx: UnboundedReceiver<i64>) -> JoinHandle<()> {
-    const WAIT_TIME: u64 = 5;
-
     tokio::task::spawn(async move {
+        // if lodestone verification is disabled, skip character lookups
+        if !state.read().await.verify_on_lodestone {
+            while rx.recv().await.is_some() {}
+            return;
+        }
+
+        const WAIT_TIME: u64 = 5;
         let lodestone = LodestoneScraper::default();
 
         let mut last_update = Instant::now();

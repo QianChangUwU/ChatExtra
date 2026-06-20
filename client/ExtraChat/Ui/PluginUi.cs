@@ -453,7 +453,7 @@ internal class PluginUi : IDisposable {
 
                 if (ImGui.Button("打开石之家")) {
                     Process.Start(new ProcessStartInfo {
-                        FileName = "https://ff.web.sdo.com/",
+                        FileName = "https://ff14risingstones.web.sdo.com/",
                         UseShellExecute = true,
                     });
                 }

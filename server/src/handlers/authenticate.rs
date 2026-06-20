@@ -31,9 +31,14 @@ pub async fn authenticate(state: Arc<RwLock<State>>, client_state: Arc<RwLock<Cl
         None => return util::send(conn, number, AuthenticateResponse::error("invalid key")).await,
     };
 
-    let (_, world_name) = util::parse_stored_world(&user.world);
-    let world = util::world_from_str(&world_name).unwrap_or(World::Ravana);
-    if !world_name.eq_ignore_ascii_case("Ravana") && world == World::Ravana {
+    let (raw_id, world_name) = util::parse_stored_world(&user.world);
+    let world = match raw_id {
+        Some(id) => {
+            World::Ravana
+        }
+        None => util::world_from_str(&world_name).unwrap_or(World::Ravana),
+    };
+    if !world_name.eq_ignore_ascii_case("Ravana") && world == World::Ravana && raw_id.is_none() {
         warn!("unknown world in db: {}", user.world);
     }
 
@@ -50,6 +55,7 @@ pub async fn authenticate(state: Arc<RwLock<State>>, client_state: Arc<RwLock<Cl
         lodestone_id: user.lodestone_id as u64,
         name: user.name.clone(),
         world,
+        raw_world: raw_id,
         hash,
     });
 
@@ -63,7 +69,7 @@ pub async fn authenticate(state: Arc<RwLock<State>>, client_state: Arc<RwLock<Cl
     trace!("  [authenticate] before state write 1");
     state.write().await.clients.insert(user.lodestone_id as u64, Arc::clone(&client_state));
     trace!("  [authenticate] before state write 2");
-    state.write().await.ids.insert((user.name, util::id_from_world(world)), user.lodestone_id as u64);
+    state.write().await.ids.insert((user.name, raw_id.unwrap_or_else(|| util::id_from_world(world))), user.lodestone_id as u64);
     trace!("  [authenticate] after state writes");
 
     if Utc::now().naive_utc().signed_duration_since(user.last_updated) >= Duration::hours(2) {

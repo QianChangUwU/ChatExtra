@@ -87,7 +87,7 @@ pub async fn promote(state: Arc<RwLock<State>>, client_state: Arc<RwLock<ClientS
         crate::util::send_to_all(&state, req.channel, 0, MemberChangeResponse {
             channel: req.channel,
             name: user.name,
-            world: crate::util::id_from_world(user.world),
+            world: user.world_id(),
             kind: MemberChangeKind::Promote {
                 rank: Rank::Moderator,
             },

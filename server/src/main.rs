@@ -498,7 +498,7 @@ async fn client_loop(state: Arc<RwLock<State>>, mut conn: WsStream) -> Result<()
 
     if let Some(user) = &client_state.read().await.user {
         state.write().await.clients.remove(&user.lodestone_id);
-        state.write().await.ids.remove(&(user.name.clone(), util::id_from_world(user.world)));
+        state.write().await.ids.remove(&(user.name.clone(), user.world_id()));
     }
 
     debug!("client thread ended");

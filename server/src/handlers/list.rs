@@ -131,15 +131,15 @@ async fn get_members(lodestone_id: u64, state: &RwLock<State>, channel_id: Uuid)
             found = true;
         }
 
-        let world = match World::from_str(&user.world) {
-            Ok(world) => world,
-            Err(_) => continue,
-        };
+        let (raw_id, name) = crate::util::parse_stored_world(&user.world);
+        let world_id = raw_id.unwrap_or_else(|| {
+            World::from_str(&name).map(crate::util::id_from_world).unwrap_or(0)
+        });
 
         let online = state.read().await.clients.contains_key(&(user.lodestone_id as u64));
         members.push(ChannelMember {
             name: user.name,
-            world: crate::util::id_from_world(world),
+            world: world_id,
             rank: Rank::from_u8(user.rank as u8),
             online,
         });

@@ -101,7 +101,7 @@ pub async fn leave(state: Arc<RwLock<State>>, client_state: Arc<RwLock<ClientSta
     crate::util::send_to_all(&state, req.channel, 0, MemberChangeResponse {
         channel: req.channel,
         name: user.name,
-        world: crate::util::id_from_world(user.world),
+        world: user.world_id(),
         kind,
     }).await?;
 

@@ -77,7 +77,7 @@ pub async fn invite(state: Arc<RwLock<State>>, client_state: Arc<RwLock<ClientSt
         world: req.world,
         kind: MemberChangeKind::Invite {
             inviter: user.name,
-            inviter_world: crate::util::id_from_world(user.world),
+            inviter_world: user.world_id(),
         },
     }).await?;
 

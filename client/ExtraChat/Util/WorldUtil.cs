@@ -24,6 +24,6 @@ internal static class WorldUtil {
     }
 
     internal static string WorldName(ushort id) {
-        return WorldNames.TryGetValue(id, out var name) ? name : "???";
+        return WorldNames.TryGetValue(id, out var name) ? name : $"({id})";
     }
 }

@@ -52,12 +52,12 @@ pub async fn kick(state: Arc<RwLock<State>>, client_state: Arc<RwLock<ClientStat
     let kind = if is_invited {
         MemberChangeKind::InviteCancel {
             canceler: user.name,
-            canceler_world: crate::util::id_from_world(user.world),
+            canceler_world: user.world_id(),
         }
     } else {
         MemberChangeKind::Kick {
             kicker: user.name,
-            kicker_world: crate::util::id_from_world(user.world),
+            kicker_world: user.world_id(),
         }
     };
 

@@ -124,5 +124,5 @@ ChatExtra/
 
 ## 鸣谢
 
-- [ExtraChat](https://github.com/anna-is-online/ExtraChat) — 上游项目
+- [ExtraChat](https://git.sharlayan.cloud/anna/ExtraChat) — 上游项目
 - [Dalamud](https://github.com/goatcorp/Dalamud) — FFXIV 插件框架

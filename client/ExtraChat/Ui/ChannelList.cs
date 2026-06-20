@@ -168,7 +168,10 @@ internal class ChannelList {
             rank = Rank.Member;
         }
 
-        if (ImGui.Selectable($"{order}. {rank.Symbol()}{name}###{id}", this._selectedChannel == id)) {
+        ImGui.PushFont(UiBuilder.IconFont);
+        var selected = ImGui.Selectable($"{order}. {rank.Symbol()}{name}###{id}", this._selectedChannel == id);
+        ImGui.PopFont();
+        if (selected) {
             this._selectedChannel = id;
 
             Task.Run(async () => await this.Plugin.Client.ListMembers(id));
@@ -325,7 +328,11 @@ internal class ChannelList {
             }
 
             try {
-                ImGui.TextUnformatted($"{member.Rank.Symbol()}{member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}");
+                ImGui.PushFont(UiBuilder.IconFont);
+                ImGui.TextUnformatted($"{member.Rank.Symbol()}");
+                ImGui.PopFont();
+                ImGui.SameLine(0, 0);
+                ImGui.TextUnformatted($"{member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}");
             } finally {
                 if (!member.Online) {
                     ImGui.PopStyleColor();

@@ -10,11 +10,10 @@ public enum Rank : byte {
 
 internal static class RankExt {
     internal static string Symbol(this Rank rank) => rank switch {
-        // invited: a question mark with a circle around it
-        Rank.Invited => "? ",
+        Rank.Invited => "\ue070 ",
         Rank.Member => "",
-        Rank.Moderator => "☆ ",
-        Rank.Admin => "★ ",
+        Rank.Moderator => "\ue0a8 ",
+        Rank.Admin => "\ue0a2 ",
         _ => "",
     };
 }

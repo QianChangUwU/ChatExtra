@@ -29,11 +29,15 @@ internal class Commands : IDisposable {
     }
 
     private void RegisterMain() {
-        foreach (var command in MainCommands) {
-            this.Plugin.CommandManager.AddHandler(command, new CommandInfo(this.MainCommand) {
-                HelpMessage = "打开 ExtraChat 主界面。使用 /extrachat server <url> 切换服务器。",
-            });
-        }
+        this.Plugin.CommandManager.AddHandler("/extrachat", new CommandInfo(this.MainCommand) {
+            HelpMessage = "打开 ExtraChat 主界面。子命令: server <url> 切换服务器, server cn/international 快速切换",
+        });
+        this.Plugin.CommandManager.AddHandler("/ec", new CommandInfo(this.MainCommand) {
+            HelpMessage = "打开 ExtraChat 主界面（别名）",
+        });
+        this.Plugin.CommandManager.AddHandler("/eclcmd", new CommandInfo(this.MainCommand) {
+            HelpMessage = "打开 ExtraChat 主界面（别名）",
+        });
     }
 
     private void UnregisterMain() {
@@ -59,7 +63,11 @@ internal class Commands : IDisposable {
                     return;
                 }
 
-                var url = args[1];
+                var url = args[1] switch {
+                    "international" or "global" or "intl" => "wss://extrachat.annaclemens.io/",
+                    "cn" or "china" => "wss://8.134.86.130/",
+                    _ => args[1],
+                };
                 if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
                     (uri.Scheme != "ws" && uri.Scheme != "wss")) {
                     this.Plugin.ChatGui.Print(new XivChatEntry {
@@ -120,7 +128,7 @@ internal class Commands : IDisposable {
         }
 
         this.Plugin.CommandManager.AddHandler(command, new CommandInfo(Handler) {
-            ShowInHelp = false,
+            ShowInHelp = true,
         });
     }
 

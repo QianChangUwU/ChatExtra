@@ -119,7 +119,7 @@ internal class Client : IDisposable {
     }
 
     private void ApplyProxySettings() {
-        this.WebSocket.Options.Proxy = this.Plugin.ConfigInfo.UseSystemProxy ? null : new System.Net.WebProxy();
+        this.WebSocket.Options.Proxy = null;
     }
 
     internal void StartLoop() {

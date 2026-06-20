@@ -41,7 +41,10 @@ impl Channel {
             .then(|member| async move {
                 ChannelMember {
                     name: member.name,
-                    world: World::from_str(&member.world).map(crate::util::id_from_world).unwrap_or(0),
+                    world: {
+                        let (raw_id, name) = crate::util::parse_stored_world(&member.world);
+                        raw_id.unwrap_or_else(|| World::from_str(&name).map(crate::util::id_from_world).unwrap_or(0))
+                    },
                     rank: Rank::from_u8(member.rank as u8),
                     online: state.read().await.clients.contains_key(&(member.lodestone_id as u64)),
                 }

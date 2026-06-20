@@ -46,6 +46,9 @@ async fn direct_register(state: Arc<RwLock<State>>, conn: &mut WsStream, number:
     let name_hash = (req.name.bytes().fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u64)) & 0xFFFF) as i64;
     let lodestone_id = (ts & 0x7FFFFFFFFFFF) | (name_hash << 47);
 
+    // store raw world id so the server can return it to the client
+    let world_stored = format!(".raw{}.{}", req.world, world_name);
+
     sqlx::query!(
         // language=sqlite
         "
@@ -60,7 +63,7 @@ async fn direct_register(state: Arc<RwLock<State>>, conn: &mut WsStream, number:
         ",
         lodestone_id,
         req.name,
-        world_name,
+        world_stored,
         key.short_token,
         hash,
     )

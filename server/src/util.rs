@@ -187,6 +187,19 @@ pub fn id_from_world(world: World) -> u16 {
     }
 }
 
+/// Parse stored world string, extracting the raw u16 world ID if encoded.
+/// Format: `.raw<id>.<name>` (direct registration) or plain `<name>` (lodestone verification)
+pub fn parse_stored_world(s: &str) -> (Option<u16>, String) {
+    if let Some(rest) = s.strip_prefix(".raw") {
+        if let Some((id_str, name)) = rest.split_once('.') {
+            if let Ok(id) = id_str.parse::<u16>() {
+                return (Some(id), name.to_string());
+            }
+        }
+    }
+    (None, s.to_string())
+}
+
 pub fn world_from_str(s: &str) -> Option<World> {
     match s {
         "Ravana" => Some(World::Ravana),

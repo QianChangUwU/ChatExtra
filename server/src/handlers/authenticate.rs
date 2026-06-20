@@ -31,8 +31,9 @@ pub async fn authenticate(state: Arc<RwLock<State>>, client_state: Arc<RwLock<Cl
         None => return util::send(conn, number, AuthenticateResponse::error("invalid key")).await,
     };
 
-    let world = util::world_from_str(&user.world).unwrap_or(World::Ravana);
-    if !user.world.eq_ignore_ascii_case("Ravana") && world == World::Ravana {
+    let (_, world_name) = util::parse_stored_world(&user.world);
+    let world = util::world_from_str(&world_name).unwrap_or(World::Ravana);
+    if !world_name.eq_ignore_ascii_case("Ravana") && world == World::Ravana {
         warn!("unknown world in db: {}", user.world);
     }
 

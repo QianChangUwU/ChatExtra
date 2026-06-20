@@ -87,9 +87,10 @@ impl State {
         };
         let id = sqlx::query!(
             // language=sqlite
-            "select lodestone_id from users where name = ? and world = ?",
+            "select lodestone_id from users where name = ? and (world = ? or world like ?)",
             name,
             world_name,
+            format!("%.{}", world_name),
         )
             .fetch_optional(&state.read().await.db)
             .await

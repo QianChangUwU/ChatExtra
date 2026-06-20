@@ -4,7 +4,7 @@ use std::sync::atomic::Ordering;
 use anyhow::{Context, Result};
 use tokio::sync::RwLock;
 
-use crate::{ClientState, ErrorResponse, MessageRequest, MessageResponse, ResponseContainer, State, util, WsStream};
+use crate::{ClientState, ErrorResponse, MessageRequest, MessageResponse, ResponseContainer, State, WsStream};
 use crate::types::protocol::ResponseKind;
 use crate::util::send;
 

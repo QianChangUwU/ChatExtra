@@ -22,6 +22,16 @@ pub async fn register(state: Arc<RwLock<State>>, _client_state: Arc<RwLock<Clien
 }
 
 async fn direct_register(state: Arc<RwLock<State>>, conn: &mut WsStream, number: u32, req: RegisterRequest) -> Result<()> {
+    if !req.challenge_completed {
+        // first step: return a dummy challenge
+        let challenge = format!("direct_registration_{}", req.world);
+        send(conn, number, RegisterResponse::Challenge {
+            challenge,
+        }).await?;
+        return Ok(());
+    }
+
+    // second step: create user and return key
     let world_name = world_from_id(req.world)
         .map(|w| w.as_str().to_string())
         .unwrap_or_else(|| format!("world_{}", req.world));

@@ -616,10 +616,19 @@ internal class Client : IDisposable {
 
         Task.Run(async () => {
             while (this._active && !this._up) {
-                await this.WebSocket.SendMessage(new RequestContainer {
-                    Number = IsUpPingNumber,
-                    Kind = new RequestKind.Ping(new PingRequest()),
-                });
+                if (this.WebSocket.State != WebSocketState.Open) {
+                    await Task.Delay(TimeSpan.FromSeconds(1));
+                    continue;
+                }
+
+                try {
+                    await this.WebSocket.SendMessage(new RequestContainer {
+                        Number = IsUpPingNumber,
+                        Kind = new RequestKind.Ping(new PingRequest()),
+                    });
+                } catch {
+                    // websocket disconnected, will retry on next loop
+                }
 
                 await Task.Delay(TimeSpan.FromSeconds(1));
             }

@@ -28,11 +28,17 @@ internal static class WorldUtil {
         }
 
         foreach (var world in worlds) {
-            if (world.DataCenter.ValueNullable?.Name.ExtractText() is not { } dcName || !CnDataCenterNames.Contains(dcName)) {
+            var worldName = world.Name.ExtractText();
+            if (!world.IsPublic ||
+                world.DataCenter.ValueNullable?.Name.ExtractText() is not { } dcName ||
+                !CnDataCenterNames.Contains(dcName) ||
+                worldName.Contains("s-") ||
+                CnDataCenterNames.Contains(worldName))
+            {
                 continue;
             }
 
-            WorldNames[(ushort) world.RowId] = world.Name.ExtractText();
+            WorldNames[(ushort) world.RowId] = worldName;
             if (world.RowId > 1000) {
                 Plugin.Log.Debug($"World {world.RowId}: {world.Name.ExtractText()} (public={world.IsPublic})");
             }

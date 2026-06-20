@@ -22,6 +22,9 @@ internal static class WorldUtil {
 
         foreach (var world in worlds) {
             WorldNames[(ushort) world.RowId] = world.Name.ExtractText();
+            if (world.RowId > 1000) {
+                Plugin.Log.Debug($"World {world.RowId}: {world.Name.ExtractText()} (public={world.IsPublic})");
+            }
         }
     }
 

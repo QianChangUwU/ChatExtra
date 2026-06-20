@@ -131,9 +131,10 @@ public class Plugin : IDalamudPlugin {
     private void FrameworkUpdate(IFramework framework) {
         if (this.ObjectTable.LocalPlayer is { } player) {
             this.LocalPlayer = player;
+            WorldUtil.SetLocalPlayer(player);
         } else if (!this.ClientState.IsLoggedIn) {
-            // only set to null if not logged in
             this.LocalPlayer = null;
+            WorldUtil.SetLocalPlayer(null);
         }
     }
 

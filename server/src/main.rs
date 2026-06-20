@@ -115,9 +115,8 @@ async fn main() -> Result<()> {
         .context("couldn't parse config file")?;
 
     // set up database pool
-    let options = SqliteConnectOptions::new()
-        .log_statements(LevelFilter::Debug)
-        .filename(&config.database.path);
+    let options = SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc", config.database.path))?
+        .log_statements(LevelFilter::Debug);
 
     let pool = SqlitePoolOptions::new()
         .after_connect(|conn, _| Box::pin(async move {

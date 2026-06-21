@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtraChat", "ExtraChat\ExtraChat.csproj", "{19904E25-FE96-41F8-BED5-24894CF189C2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtraChat-CN", "ExtraChat-CN\ExtraChat-CN.csproj", "{19904E25-FE96-41F8-BED5-24894CF189C2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

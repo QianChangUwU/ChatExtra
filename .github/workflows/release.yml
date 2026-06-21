@@ -85,7 +85,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore NuGet packages
-        run: dotnet restore client/ExtraChat/ExtraChat.csproj
+        run: dotnet restore client/ExtraChat-CN/ExtraChat-CN.csproj
 
       - name: Download and setup Dalamud
         run: |
@@ -95,7 +95,7 @@ jobs:
 
       - name: Build
         run: |
-          dotnet build client/ExtraChat/ExtraChat.csproj \
+          dotnet build client/ExtraChat-CN/ExtraChat-CN.csproj \
             -c Release \
             -p:TargetFramework=net10.0-windows7.0 \
             -p:DALAMUD_HOME=$DALAMUD_HOME
@@ -103,28 +103,20 @@ jobs:
       - name: Package plugin
         run: |
           mkdir -p release
-          cd client/ExtraChat/bin/Release
-          # SDK generates ExtraChat.json with upstream template; overwrite with our manifest
-          cat > ExtraChat-CN.json << 'EOF'
-          {
-            "Author": "Anna, QianChangUwU",
-            "Name": "ExtraChat-CN",
-            "InternalName": "ExtraChat-CN",
-            "Punchline": "跨数据中心、不限成员数量的加密聊天频道。",
-            "Description": "ExtraChat 添加端到端加密、跨数据中心、不限成员数量的额外聊天频道到游戏中。",
-            "RepoUrl": "https://github.com/QianChangUwU/ChatExtra",
-            "AssemblyVersion": "$VERSION",
-            "ApplicableVersion": "any",
-            "DalamudApiLevel": 15,
-            "LoadRequiredState": 0,
-            "LoadSync": false,
-            "CanUnloadAsync": false,
-            "LoadPriority": 0,
-            "AcceptsFeedback": false
-          }
-          EOF
-          sed -i "s/\$VERSION/$VERSION/g" ExtraChat-CN.json
-          zip -r $OLDPWD/release/ExtraChat-CN.zip . -x "*.pdb"
+          cd client/ExtraChat-CN/bin/Release
+          # Remove SDK-generated stale files
+          rm -f ExtraChat.json ExtraChat.deps.json ExtraChat.pdb
+          rm -rf ExtraChat
+          # Only include files needed at runtime (win-x64 only)
+          zip -r $OLDPWD/release/ExtraChat-CN.zip \
+            ExtraChat-CN.dll \
+            ExtraChat-CN.json \
+            ExtraChat-CN.deps.json \
+            ASodium.dll \
+            MessagePack.dll \
+            MessagePack.Annotations.dll \
+            Microsoft.NET.StringTools.dll \
+            runtimes/win-x64/
           cd $OLDPWD
           ls -la release/
 

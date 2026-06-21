@@ -336,9 +336,12 @@ internal class ChannelList {
             }
 
             try {
-                var displayName = member.Nickname is { } n
-                    ? $"{n} [{member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}]"
-                    : $"{member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}";
+                var noteKey = this.Plugin.ConfigInfo.GetNoteKey(member.Name, member.World);
+                var hasNote = this.Plugin.ConfigInfo.Notes.TryGetValue(noteKey, out var note);
+                var displayName = hasNote ? note
+                    : member.Nickname is { } n
+                        ? $"{n} [{member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}]"
+                        : $"{member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}";
                 ImGui.TextUnformatted($"{member.Rank.Symbol()} {displayName}");
             } finally {
                 if (!member.Online) {

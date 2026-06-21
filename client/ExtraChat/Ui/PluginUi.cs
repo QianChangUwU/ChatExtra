@@ -217,6 +217,7 @@ internal class PluginUi : IDisposable {
     }
 
     private string? _nicknameBuffer;
+    private bool _editingNickname;
 
     private void DrawSettingsGeneral(ref bool anyChanged) {
         anyChanged |= ImGui.Checkbox("使用系统通知", ref this.Plugin.Config.UseNativeToasts);
@@ -232,18 +233,34 @@ internal class PluginUi : IDisposable {
         ImGui.Spacing();
 
         ImGui.TextUnformatted("自定义昵称");
-        ImGui.SetNextItemWidth(-1);
-        if (ImGui.InputTextWithHint("##nickname", "输入后按回车确认", ref this._nicknameBuffer, 32, ImGuiInputTextFlags.EnterReturnsTrue)) {
-            var trimmed = string.IsNullOrWhiteSpace(this._nicknameBuffer) ? null : this._nicknameBuffer.Trim();
-            this.Plugin.ConfigInfo.Nickname = trimmed;
-            anyChanged = true;
-        }
 
-        if (ImGui.Button("修改自定义昵称")) {
-            var trimmed = string.IsNullOrWhiteSpace(this._nicknameBuffer) ? null : this._nicknameBuffer.Trim();
-            this.Plugin.ConfigInfo.Nickname = trimmed;
-            anyChanged = true;
-            Task.Run(async () => await this.Plugin.Client.SetNickname(trimmed));
+        if (this._editingNickname) {
+            ImGui.SetNextItemWidth(-1);
+            if (ImGui.InputTextWithHint("##nickname", "按回车确认", ref this._nicknameBuffer, 32, ImGuiInputTextFlags.EnterReturnsTrue)) {
+                var trimmed = string.IsNullOrWhiteSpace(this._nicknameBuffer) ? null : this._nicknameBuffer.Trim();
+                this.Plugin.ConfigInfo.Nickname = trimmed;
+                anyChanged = true;
+                Task.Run(async () => await this.Plugin.Client.SetNickname(trimmed));
+                this._editingNickname = false;
+            }
+
+            if (ImGui.Button("确认")) {
+                var trimmed = string.IsNullOrWhiteSpace(this._nicknameBuffer) ? null : this._nicknameBuffer.Trim();
+                this.Plugin.ConfigInfo.Nickname = trimmed;
+                anyChanged = true;
+                Task.Run(async () => await this.Plugin.Client.SetNickname(trimmed));
+                this._editingNickname = false;
+            }
+        } else {
+            var current = this.Plugin.ConfigInfo.Nickname;
+            ImGui.TextUnformatted(string.IsNullOrEmpty(current) ? "（未设置）" : current);
+
+            ImGui.SameLine();
+
+            if (ImGui.Button("修改自定义昵称")) {
+                this._nicknameBuffer = this.Plugin.ConfigInfo.Nickname ?? string.Empty;
+                this._editingNickname = true;
+            }
         }
 
         ImGui.TextUnformatted("设置后其他人看到的消息格式: [标记]<自定义昵称> 消息内容");

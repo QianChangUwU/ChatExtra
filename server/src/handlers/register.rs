@@ -31,48 +31,100 @@ async fn direct_register(state: Arc<RwLock<State>>, conn: &mut WsStream, number:
         return Ok(());
     }
 
-    // second step: create user and return key
     let world_name = world_from_id(req.world)
         .map(|w| w.as_str().to_string())
         .unwrap_or_else(|| format!("world_{}", req.world));
+    let world_stored = format!(".raw{}.{}", req.world, world_name);
 
     let key = prefixed_api_key::generate("extrachat", None);
     let hash = hash_key(&key);
+    let db = &state.read().await.db;
 
-    // generate deterministic lodestone_id from (name, world) so re-registration overwrites the same row
-    let combined = format!("{}\0{}", req.name, req.world);
-    let lodestone_id = combined.bytes().fold(0i64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as i64)) & 0x7FFFFFFFFFFFFFFF;
+    if let Some(content_id) = req.content_id {
+        // --- new client with Content ID ---
 
-    // store raw world id so the server can return it to the client
-    let world_stored = format!(".raw{}.{}", req.world, world_name);
+        // 1. already registered with this content_id → update key
+        let existing = sqlx::query!(
+            "select lodestone_id from users where content_id = ?",
+            content_id,
+        )
+            .fetch_optional(db)
+            .await
+            .context("could not query database for user")?;
 
-    sqlx::query!(
-        // language=sqlite
-        "
-            insert into users (lodestone_id, name, world, key_short, key_hash, last_updated)
-            values (?1, ?2, ?3, ?4, ?5, current_timestamp)
-            on conflict (lodestone_id)
-                do update set name         = ?2,
-                              world        = ?3,
-                              key_short    = ?4,
-                              key_hash     = ?5,
-                              last_updated = current_timestamp
-        ",
-        lodestone_id,
-        req.name,
-        world_stored,
-        key.short_token,
-        hash,
-    )
-        .execute(&state.read().await.db)
-        .await
-        .context("could not insert user")?;
+        if let Some(row) = existing {
+            sqlx::query!(
+                "update users set name = ?, world = ?, key_short = ?, key_hash = ?, last_updated = current_timestamp where lodestone_id = ?",
+                req.name, world_stored, key.short_token, hash, row.lodestone_id,
+            )
+                .execute(db)
+                .await
+                .context("could not update user")?;
 
-    send(conn, number, RegisterResponse::Success {
-        key: key.to_string().into(),
-    }).await?;
+            send(conn, number, RegisterResponse::Success {
+                key: key.to_string().into(),
+            }).await?;
+            return Ok(());
+        }
 
-    Ok(())
+        // 2. legacy user (content_id IS NULL) with same (name, world) → bind content_id
+        let legacy = sqlx::query!(
+            "select lodestone_id from users where name = ? and world = ? and content_id is null",
+            req.name, world_stored,
+        )
+            .fetch_optional(db)
+            .await
+            .context("could not query database for legacy user")?;
+
+        if let Some(row) = legacy {
+            sqlx::query!(
+                "update users set content_id = ?, key_short = ?, key_hash = ?, last_updated = current_timestamp where lodestone_id = ?",
+                content_id, key.short_token, hash, row.lodestone_id,
+            )
+                .execute(db)
+                .await
+                .context("could not bind content_id to legacy user")?;
+
+            send(conn, number, RegisterResponse::Success {
+                key: key.to_string().into(),
+            }).await?;
+            return Ok(());
+        }
+
+        // 3. fresh registration
+        let combined = format!("{}\0{}", req.name, req.world);
+        let lodestone_id = combined.bytes().fold(0i64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as i64)) & 0x7FFFFFFFFFFFFFFF;
+
+        sqlx::query!(
+            "insert into users (lodestone_id, name, world, content_id, key_short, key_hash, last_updated) values (?1, ?2, ?3, ?4, ?5, ?6, current_timestamp)",
+            lodestone_id, req.name, world_stored, content_id, key.short_token, hash,
+        )
+            .execute(db)
+            .await
+            .context("could not insert user")?;
+
+        send(conn, number, RegisterResponse::Success {
+            key: key.to_string().into(),
+        }).await?;
+        Ok(())
+    } else {
+        // --- old client without Content ID ---
+        let combined = format!("{}\0{}", req.name, req.world);
+        let lodestone_id = combined.bytes().fold(0i64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as i64)) & 0x7FFFFFFFFFFFFFFF;
+
+        sqlx::query!(
+            "insert into users (lodestone_id, name, world, key_short, key_hash, last_updated) values (?1, ?2, ?3, ?4, ?5, current_timestamp) on conflict (lodestone_id) do update set name = ?2, world = ?3, key_short = ?4, key_hash = ?5, last_updated = current_timestamp",
+            lodestone_id, req.name, world_stored, key.short_token, hash,
+        )
+            .execute(db)
+            .await
+            .context("could not insert user")?;
+
+        send(conn, number, RegisterResponse::Success {
+            key: key.to_string().into(),
+        }).await?;
+        Ok(())
+    }
 }
 
 async fn verify_register(state: Arc<RwLock<State>>, conn: &mut WsStream, number: u32, req: RegisterRequest) -> Result<()> {

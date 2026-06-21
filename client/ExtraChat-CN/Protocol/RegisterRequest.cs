@@ -13,4 +13,7 @@ public class RegisterRequest {
 
     [Key(2)]
     public bool ChallengeCompleted;
+
+    [Key(3)]
+    public long? ContentId;
 }

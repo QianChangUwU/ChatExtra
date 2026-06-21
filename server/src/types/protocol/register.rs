@@ -6,6 +6,7 @@ pub struct RegisterRequest {
     pub name: String,
     pub world: u16,
     pub challenge_completed: bool,
+    pub content_id: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

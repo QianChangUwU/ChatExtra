@@ -236,10 +236,12 @@ internal class Client : IDisposable {
         }
 
         this.Status = State.RetrievingChallenge;
+        var cid = this.Plugin.ClientState.LocalContentId;
         var response = await this.QueueMessageAndWait(new RequestKind.Register(new RegisterRequest {
             Name = player.Name.TextValue,
             World = (ushort) player.HomeWorld.RowId,
             ChallengeCompleted = false,
+            ContentId = cid != 0 ? (long) cid : null,
         }));
 
         switch (response) {
@@ -373,10 +375,12 @@ internal class Client : IDisposable {
         }
 
         this.Status = State.Verifying;
+        var cid = this.Plugin.ClientState.LocalContentId;
         var response = await this.QueueMessageAndWait(new RequestKind.Register(new RegisterRequest {
             Name = player.Name.TextValue,
             World = (ushort) player.HomeWorld.RowId,
             ChallengeCompleted = true,
+            ContentId = cid != 0 ? (long) cid : null,
         }));
 
         switch (response) {

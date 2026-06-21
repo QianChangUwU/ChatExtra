@@ -47,6 +47,7 @@ impl Channel {
                     },
                     rank: Rank::from_u8(member.rank as u8),
                     online: state.read().await.clients.contains_key(&(member.lodestone_id as u64)),
+                    nickname: member.nickname,
                 }
             })
             .collect()
@@ -69,6 +70,7 @@ pub struct ChannelMember {
     pub world: u16,
     pub rank: Rank,
     pub online: bool,
+    pub nickname: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize_repr, Deserialize_repr, PartialEq, Eq, PartialOrd, Ord)]

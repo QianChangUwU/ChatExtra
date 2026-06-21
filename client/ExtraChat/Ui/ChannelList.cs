@@ -336,7 +336,10 @@ internal class ChannelList {
             }
 
             try {
-                ImGui.TextUnformatted($"{member.Rank.Symbol()} {member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}");
+                var displayName = member.Nickname is { } n
+                    ? $"{n} [{member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}]"
+                    : $"{member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}";
+                ImGui.TextUnformatted($"{member.Rank.Symbol()} {displayName}");
             } finally {
                 if (!member.Online) {
                     ImGui.PopStyleColor();

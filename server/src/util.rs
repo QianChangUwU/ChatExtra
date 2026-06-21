@@ -44,6 +44,7 @@ pub struct RawMember {
     pub name: String,
     pub world: String,
     pub rank: i64,
+    pub nickname: Option<String>,
 }
 
 pub async fn get_raw_members(state: &RwLock<State>, channel: Uuid) -> Result<Vec<RawMember>> {
@@ -51,7 +52,7 @@ pub async fn get_raw_members(state: &RwLock<State>, channel: Uuid) -> Result<Vec
     sqlx::query_as!(
         RawMember,
         // language=sqlite
-        "select users.lodestone_id, users.name, users.world, user_channels.rank from user_channels inner join users on users.lodestone_id = user_channels.lodestone_id where user_channels.channel_id = ?",
+        "select users.lodestone_id, users.name, users.world, user_channels.rank, users.nickname from user_channels inner join users on users.lodestone_id = user_channels.lodestone_id where user_channels.channel_id = ?",
         id,
     )
         .fetch_all(&state.read().await.db)
@@ -64,7 +65,7 @@ pub async fn get_raw_invited_members(state: &RwLock<State>, channel: Uuid) -> Re
     sqlx::query_as!(
         RawMember,
         // language=sqlite
-        "select users.lodestone_id, users.name, users.world, cast(0 as int) as rank from channel_invites inner join users on users.lodestone_id = channel_invites.invited where channel_invites.channel_id = ?",
+        "select users.lodestone_id, users.name, users.world, cast(0 as int) as rank, users.nickname from channel_invites inner join users on users.lodestone_id = channel_invites.invited where channel_invites.channel_id = ?",
         id,
     )
         .fetch_all(&state.read().await.db)

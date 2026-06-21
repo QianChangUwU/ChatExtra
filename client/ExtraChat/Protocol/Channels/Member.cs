@@ -16,4 +16,7 @@ public class Member {
 
     [Key(3)]
     public bool Online;
+
+    [Key(4)]
+    public string? Nickname;
 }

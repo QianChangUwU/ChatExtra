@@ -107,7 +107,7 @@ async fn get_members(lodestone_id: u64, state: &RwLock<State>, channel_id: Uuid)
     let users: Vec<RawMember> = sqlx::query_as!(
         RawMember,
         // language=sqlite
-        "select users.lodestone_id, users.name, users.world, user_channels.rank from user_channels inner join users on users.lodestone_id = user_channels.lodestone_id where user_channels.channel_id = ?",
+        "select users.lodestone_id, users.name, users.world, user_channels.rank, users.nickname from user_channels inner join users on users.lodestone_id = user_channels.lodestone_id where user_channels.channel_id = ?",
         channel_id_str,
     )
         .fetch_all(&state.read().await.db)
@@ -117,7 +117,7 @@ async fn get_members(lodestone_id: u64, state: &RwLock<State>, channel_id: Uuid)
     let invited: Vec<RawMember> = sqlx::query_as!(
         RawMember,
         // language=sqlite
-        "select users.lodestone_id, users.name, users.world, cast(0 as int) as rank from channel_invites inner join users on users.lodestone_id = channel_invites.invited where channel_invites.channel_id = ?",
+        "select users.lodestone_id, users.name, users.world, cast(0 as int) as rank, users.nickname from channel_invites inner join users on users.lodestone_id = channel_invites.invited where channel_invites.channel_id = ?",
         channel_id_str,
     )
         .fetch_all(&state.read().await.db)
@@ -142,6 +142,7 @@ async fn get_members(lodestone_id: u64, state: &RwLock<State>, channel_id: Uuid)
             world: world_id,
             rank: Rank::from_u8(user.rank as u8),
             online,
+            nickname: user.nickname,
         });
     }
 

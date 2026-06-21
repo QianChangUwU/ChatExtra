@@ -231,17 +231,21 @@ internal class PluginUi : IDisposable {
 
         ImGui.Spacing();
 
-        this._nicknameBuffer ??= this.Plugin.ConfigInfo.Nickname ?? string.Empty;
         ImGui.TextUnformatted("自定义昵称");
         ImGui.SetNextItemWidth(-1);
-        if (ImGui.InputTextWithHint("##nickname", "显示在消息中的自定义名称", ref this._nicknameBuffer, 32)) {
-            anyChanged = true;
-        }
-        if (ImGui.IsItemDeactivatedAfterEdit()) {
+        if (ImGui.InputTextWithHint("##nickname", "输入后按回车确认", ref this._nicknameBuffer, 32, ImGuiInputTextFlags.EnterReturnsTrue)) {
             var trimmed = string.IsNullOrWhiteSpace(this._nicknameBuffer) ? null : this._nicknameBuffer.Trim();
             this.Plugin.ConfigInfo.Nickname = trimmed;
+            anyChanged = true;
+        }
+
+        if (ImGui.Button("修改自定义昵称")) {
+            var trimmed = string.IsNullOrWhiteSpace(this._nicknameBuffer) ? null : this._nicknameBuffer.Trim();
+            this.Plugin.ConfigInfo.Nickname = trimmed;
+            anyChanged = true;
             Task.Run(async () => await this.Plugin.Client.SetNickname(trimmed));
         }
+
         ImGui.TextUnformatted("设置后其他人看到的消息格式: [标记]<自定义昵称> 消息内容");
         //
         // ImGui.TextUnformatted("Default channel");

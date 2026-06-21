@@ -398,7 +398,8 @@ internal class ChannelList
             {
                 var noteKey = this.Plugin.ConfigInfo.GetNoteKey(member.Name, member.World);
                 var hasNote = this.Plugin.ConfigInfo.Notes.TryGetValue(noteKey, out var note);
-                var displayName = hasNote ? note
+                var displayName = hasNote
+                    ? $"{note} [{member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}]"
                     : member.Nickname is { } n
                         ? $"{n} [{member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}]"
                         : $"{member.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(member.World)}";

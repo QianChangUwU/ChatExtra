@@ -1,1 +1,1 @@
-alter table users add column nickname text;
+select 1;

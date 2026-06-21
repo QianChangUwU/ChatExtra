@@ -14,7 +14,7 @@ use log::{debug, error, info, Level, LevelFilter, warn};
 use rustyline::history::DefaultHistory;
 use sha3::Digest;
 use sqlx::{ConnectOptions, Executor, Pool, Sqlite};
-use sqlx::migrate::{MigrateHashAlgorithm, Migrator};
+use sqlx::migrate::Migrator;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc::{Sender, UnboundedSender};
@@ -102,6 +102,8 @@ impl State {
     }
 }
 
+static MIGRATOR: Migrator = sqlx::migrate!();
+
 #[tokio::main]
 async fn main() -> Result<()> {
     logging::setup()?;
@@ -129,12 +131,13 @@ async fn main() -> Result<()> {
         .await
         .context("could not connect to database")?;
 
-    // DB checksums are Sha384; match existing records
-    let mut migrator = sqlx::migrate!();
-    migrator.set_hash_algorithm(MigrateHashAlgorithm::Sha384);
-    migrator.run(&pool)
+    MIGRATOR.run(&pool)
         .await
         .context("could not run database migrations")?;
+
+    // ensure schema columns that predate migration idempotency
+    ensure_schema_columns(&pool).await
+        .context("could not ensure schema columns")?;
 
     // set up updater channel
     let (updater_tx, updater_rx) = tokio::sync::mpsc::unbounded_channel();
@@ -511,6 +514,35 @@ async fn client_loop(state: Arc<RwLock<State>>, mut conn: WsStream) -> Result<()
     }
 
     debug!("client thread ended");
+
+    Ok(())
+}
+
+/// ensure columns added by older ALTER-TABLE migrations exist
+async fn ensure_schema_columns(pool: &Pool<Sqlite>) -> Result<()> {
+    let cols: Vec<String> = sqlx::query_scalar(
+        "select name from pragma_table_info('users')"
+    )
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
+
+    for (col, sql) in [
+        ("last_updated", "alter table users add column last_updated timestamp not null default 0"),
+        ("nickname",     "alter table users add column nickname text"),
+        ("content_id",   "alter table users add column content_id unsigned bigint"),
+    ] {
+        if !cols.contains(&col.to_string()) {
+            sqlx::query(sql).execute(pool).await?;
+        }
+    }
+
+    // index depends on content_id column; safe after column check above
+    sqlx::query(
+        "create unique index if not exists users_content_id_idx on users (content_id)"
+    )
+        .execute(pool)
+        .await?;
 
     Ok(())
 }

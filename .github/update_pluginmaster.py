@@ -9,14 +9,14 @@ json_path = os.path.join(repo_path, 'pluginmaster.json')
 with open(json_path, 'r', encoding='utf-8') as f:
     data = json.load(f)
 
-download_url = f"https://github.com/{repo_full_name}/releases/download/v{version}/ExtraChat.zip"
+download_url = f"https://github.com/{repo_full_name}/releases/download/v{version}/ExtraChat-CN.zip"
 
 entry = {
-    'Name': 'ExtraChat',
+    'Name': 'ExtraChat-CN',
     'Author': 'Anna, QianChangUwU',
     'Punchline': '跨数据中心、不限成员数量的加密聊天频道。',
     'Description': 'ExtraChat 添加端到端加密、跨数据中心、不限成员数量的额外聊天频道到游戏中。',
-    'InternalName': 'ExtraChat',
+    'InternalName': 'ExtraChat-CN',
     'AssemblyVersion': version,
     'TestingAssemblyVersion': version,
     'DalamudApiLevel': 15,
@@ -33,7 +33,7 @@ entry = {
     'LastUpdate': int(time.time()),
 }
 
-idx = next((i for i, e in enumerate(data) if e.get('InternalName') == 'ExtraChat'), -1)
+idx = next((i for i, e in enumerate(data) if e.get('InternalName') == 'ExtraChat-CN'), -1)
 if idx >= 0:
     data[idx] = entry
 else:

@@ -104,9 +104,9 @@ jobs:
         run: |
           mkdir -p release
           cd client/ExtraChat/bin/Release
-          zip -r $OLDPWD/release/ExtraChat.zip . -x "*.pdb"
+          zip -r $OLDPWD/release/ExtraChat-CN.zip . -x "*.pdb"
           cd $OLDPWD
-          cp client/ExtraChat/ExtraChat.json release/
+          cp client/ExtraChat/ExtraChat-CN.json release/
           ls -la release/
 
       - name: Generate checksums

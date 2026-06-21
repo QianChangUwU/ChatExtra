@@ -14,7 +14,7 @@ use log::{debug, error, info, Level, LevelFilter, warn};
 use rustyline::history::DefaultHistory;
 use sha3::Digest;
 use sqlx::{ConnectOptions, Executor, Pool, Sqlite};
-use sqlx::migrate::Migrator;
+use sqlx::migrate::{MigrateHashAlgorithm, Migrator};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc::{Sender, UnboundedSender};
@@ -102,8 +102,6 @@ impl State {
     }
 }
 
-static MIGRATOR: Migrator = sqlx::migrate!();
-
 #[tokio::main]
 async fn main() -> Result<()> {
     logging::setup()?;
@@ -130,7 +128,11 @@ async fn main() -> Result<()> {
         .connect_with(options)
         .await
         .context("could not connect to database")?;
-    MIGRATOR.run(&pool)
+
+    // existing DB used Sha384; keep consistent
+    let mut migrator = sqlx::migrate!();
+    migrator.hash_algorithm = MigrateHashAlgorithm::Sha384;
+    migrator.run(&pool)
         .await
         .context("could not run database migrations")?;
 

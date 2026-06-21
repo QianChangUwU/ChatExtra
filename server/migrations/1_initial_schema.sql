@@ -4,8 +4,7 @@ create table users
     name         text            not null,
     world        text            not null,
     key_short    text            not null,
-    key_hash     text            not null,
-    content_id   unsigned bigint
+    key_hash     text            not null
 );
 
 create table verifications

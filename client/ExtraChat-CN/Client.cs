@@ -236,7 +236,7 @@ internal class Client : IDisposable {
         }
 
         this.Status = State.RetrievingChallenge;
-        var cid = this.Plugin.ClientState.LocalContentId;
+        var cid = player.ContentId;
         var response = await this.QueueMessageAndWait(new RequestKind.Register(new RegisterRequest {
             Name = player.Name.TextValue,
             World = (ushort) player.HomeWorld.RowId,
@@ -375,7 +375,7 @@ internal class Client : IDisposable {
         }
 
         this.Status = State.Verifying;
-        var cid = this.Plugin.ClientState.LocalContentId;
+        var cid = player.ContentId;
         var response = await this.QueueMessageAndWait(new RequestKind.Register(new RegisterRequest {
             Name = player.Name.TextValue,
             World = (ushort) player.HomeWorld.RowId,

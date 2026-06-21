@@ -405,6 +405,26 @@ internal class ChannelList {
             }
         }
 
+        ImGui.Separator();
+
+        if (ImGui.BeginMenu("设置备注")) {
+            var key = this.Plugin.ConfigInfo.GetNoteKey(member.Name, member.World);
+            var hasNote = this.Plugin.ConfigInfo.Notes.TryGetValue(key, out var existingNote);
+            var buffer = hasNote ? existingNote : string.Empty;
+
+            ImGui.SetNextItemWidth(200);
+            if (ImGui.InputText($"##note-{member.Name}-{member.World}", ref buffer, 32)) {
+                if (string.IsNullOrWhiteSpace(buffer)) {
+                    this.Plugin.ConfigInfo.Notes.Remove(key);
+                } else {
+                    this.Plugin.ConfigInfo.Notes[key] = buffer.Trim();
+                }
+                this.Plugin.SaveConfig();
+            }
+
+            ImGui.EndMenu();
+        }
+
         if (cursor == ImGui.GetCursorPos()) {
             ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetStyle().Colors[(int) ImGuiCol.TextDisabled]);
             ImGui.TextUnformatted("无可用操作");

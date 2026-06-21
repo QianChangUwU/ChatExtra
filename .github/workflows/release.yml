@@ -104,8 +104,26 @@ jobs:
         run: |
           mkdir -p release
           cd client/ExtraChat/bin/Release
-          # rename manifest to match InternalName (ExtraChat-CN)
-          mv ExtraChat.json ExtraChat-CN.json
+          # SDK generates ExtraChat.json with upstream template; overwrite with our manifest
+          cat > ExtraChat-CN.json << 'EOF'
+          {
+            "Author": "Anna, QianChangUwU",
+            "Name": "ExtraChat-CN",
+            "InternalName": "ExtraChat-CN",
+            "Punchline": "跨数据中心、不限成员数量的加密聊天频道。",
+            "Description": "ExtraChat 添加端到端加密、跨数据中心、不限成员数量的额外聊天频道到游戏中。",
+            "RepoUrl": "https://github.com/QianChangUwU/ChatExtra",
+            "AssemblyVersion": "$VERSION",
+            "ApplicableVersion": "any",
+            "DalamudApiLevel": 15,
+            "LoadRequiredState": 0,
+            "LoadSync": false,
+            "CanUnloadAsync": false,
+            "LoadPriority": 0,
+            "AcceptsFeedback": false
+          }
+          EOF
+          sed -i "s/\$VERSION/$VERSION/g" ExtraChat-CN.json
           zip -r $OLDPWD/release/ExtraChat-CN.zip . -x "*.pdb"
           cd $OLDPWD
           ls -la release/

@@ -129,9 +129,9 @@ async fn main() -> Result<()> {
         .await
         .context("could not connect to database")?;
 
-    // existing DB used Sha384; keep consistent
+    // DB checksums are Sha384; match existing records
     let mut migrator = sqlx::migrate!();
-    migrator.hash_algorithm = MigrateHashAlgorithm::Sha384;
+    migrator.set_hash_algorithm(MigrateHashAlgorithm::Sha384);
     migrator.run(&pool)
         .await
         .context("could not run database migrations")?;

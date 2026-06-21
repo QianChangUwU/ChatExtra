@@ -18,4 +18,7 @@ public class MessageResponse {
     
     [Key(3)]
     public byte[] Message;
+
+    [Key(4)]
+    public string? Nickname;
 }

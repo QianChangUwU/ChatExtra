@@ -10,6 +10,7 @@ pub use self::{
     leave::*,
     list::*,
     message::*,
+    nickname::*,
     ping::*,
     promote::*,
     public_key::*,
@@ -31,6 +32,7 @@ pub mod kick;
 pub mod leave;
 pub mod list;
 pub mod message;
+pub mod nickname;
 pub mod ping;
 pub mod promote;
 pub mod public_key;

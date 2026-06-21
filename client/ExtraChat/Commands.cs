@@ -1,3 +1,4 @@
+using System.Text;
 using Dalamud.Game.Command;
 using ExtraChat.Util;
 using Dalamud.Game.Text;
@@ -10,6 +11,7 @@ internal class Commands : IDisposable {
         "/extrachat",
         "/ec",
         "/eclcmd",
+        "/ecs",
     };
 
     private Plugin Plugin { get; }
@@ -38,6 +40,9 @@ internal class Commands : IDisposable {
         this.Plugin.CommandManager.AddHandler("/eclcmd", new CommandInfo(this.MainCommand) {
             HelpMessage = "打开 ExtraChat 主界面（别名）",
         });
+        this.Plugin.CommandManager.AddHandler("/ecs", new CommandInfo(this.MainCommand) {
+            HelpMessage = "打开 ExtraChat 频道选择器",
+        });
     }
 
     private void UnregisterMain() {
@@ -45,9 +50,14 @@ internal class Commands : IDisposable {
             this.Plugin.CommandManager.RemoveHandler(command);
         }
     }
-
     private void MainCommand(string command, string arguments) {
+        if (command == "/ecs") {
+            this.Plugin.PluginUi.ChannelSelectorVisible ^= true;
+            return;
+        }
+
         var args = arguments.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+
         if (args.Length == 0) {
             this.Plugin.PluginUi.Visible ^= true;
             return;
@@ -122,13 +132,19 @@ internal class Commands : IDisposable {
 
     private void RegisterOne(string command, Guid id) {
         this.RegisteredInternal[command] = id;
+        var name = this.Plugin.ConfigInfo.GetName(id);
 
         void Handler(string _, string arguments) {
-            Plugin.Log.Warning("Command handler actually invoked");
+            if (string.IsNullOrWhiteSpace(arguments)) {
+                this.Plugin.GameFunctions.OverrideChannel = id;
+            } else {
+                this.SendMessage(id, Encoding.UTF8.GetBytes(arguments));
+            }
         }
 
         this.Plugin.CommandManager.AddHandler(command, new CommandInfo(Handler) {
             ShowInHelp = true,
+            HelpMessage = $"切换到 {name} 频道",
         });
     }
 

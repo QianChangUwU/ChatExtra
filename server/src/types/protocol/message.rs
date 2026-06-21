@@ -16,4 +16,5 @@ pub struct MessageResponse {
     pub world: u16,
     #[serde(with = "serde_bytes")]
     pub message: Redacted<Vec<u8>>,
+    pub nickname: Option<String>,
 }

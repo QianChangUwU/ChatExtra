@@ -78,4 +78,7 @@ public abstract record ResponseKind {
 
     [MessagePackObject]
     public record AllowInvites(AllowInvitesResponse Response) : ResponseKind;
+
+    [MessagePackObject]
+    public record Nickname(NicknameResponse Response) : ResponseKind;
 }

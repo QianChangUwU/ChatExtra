@@ -57,6 +57,7 @@ pub async fn authenticate(state: Arc<RwLock<State>>, client_state: Arc<RwLock<Cl
         world,
         raw_world: raw_id,
         hash,
+        nickname: user.nickname,
     });
 
     c_state.pk = req.pk.into_inner();

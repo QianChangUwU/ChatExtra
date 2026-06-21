@@ -63,4 +63,7 @@ public abstract record RequestKind {
 
     [MessagePackObject]
     public record AllowInvites(AllowInvitesRequest Request) : RequestKind;
+
+    [MessagePackObject]
+    public record Nickname(NicknameRequest Request) : RequestKind;
 }

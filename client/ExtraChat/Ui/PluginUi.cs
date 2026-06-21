@@ -20,6 +20,7 @@ internal class PluginUi : IDisposable {
     private ChannelList ChannelList { get; }
 
     internal bool Visible;
+    internal bool ChannelSelectorVisible;
 
     private readonly List<(uint Id, Vector4 Abgr)> _uiColours;
 
@@ -62,13 +63,58 @@ internal class PluginUi : IDisposable {
     private Guid? _inviteId;
     private readonly Channel<string?> _challengeChannel = Channel.CreateUnbounded<string?>();
 
+    internal (string Name, ushort World)? NoteTarget;
+    private string _noteBuffer = string.Empty;
+
+    internal void SetNoteTarget(string name, ushort world) {
+        var key = this.Plugin.ConfigInfo.GetNoteKey(name, world);
+        this._noteBuffer = this.Plugin.ConfigInfo.Notes.TryGetValue(key, out var existing) ? existing : string.Empty;
+        this.NoteTarget = (name, world);
+    }
+
     private void Draw() {
         if (this._challengeChannel.Reader.TryRead(out var challenge)) {
             this._challenge = challenge;
         }
 
         this.DrawConfigWindow();
+        this.Plugin.ChannelSelector.Draw();
         this.DrawInviteWindow();
+        this.DrawNotePopup();
+    }
+
+    private void DrawNotePopup() {
+        if (this.NoteTarget is not { } target) {
+            return;
+        }
+
+        if (!ImGui.Begin("设置备注###ec-note", ImGuiWindowFlags.AlwaysAutoResize)) {
+            ImGui.End();
+            return;
+        }
+
+        ImGui.TextUnformatted($"为 {target.Name} 设置备注：");
+        ImGui.SetNextItemWidth(250);
+        ImGui.InputText("##note", ref this._noteBuffer, 32);
+
+        if (ImGui.Button("保存")) {
+            var key = this.Plugin.ConfigInfo.GetNoteKey(target.Name, target.World);
+            if (string.IsNullOrWhiteSpace(this._noteBuffer)) {
+                this.Plugin.ConfigInfo.Notes.Remove(key);
+            } else {
+                this.Plugin.ConfigInfo.Notes[key] = this._noteBuffer.Trim();
+            }
+            this.Plugin.SaveConfig();
+            this.NoteTarget = null;
+        }
+
+        ImGui.SameLine();
+
+        if (ImGui.Button("取消")) {
+            this.NoteTarget = null;
+        }
+
+        ImGui.End();
     }
 
     private void DrawConfigWindow() {
@@ -170,11 +216,33 @@ internal class PluginUi : IDisposable {
         }
     }
 
+    private string? _nicknameBuffer;
+
     private void DrawSettingsGeneral(ref bool anyChanged) {
         anyChanged |= ImGui.Checkbox("使用系统通知", ref this.Plugin.Config.UseNativeToasts);
         anyChanged |= ImGui.Checkbox("右键菜单添加邀请", ref this.Plugin.Config.ShowContextMenuItem);
+        if (ImGui.Checkbox("频道切换窗口", ref this.ChannelSelectorVisible)) {
+            if (!this.ChannelSelectorVisible) {
+                this.Plugin.GameFunctions.ResetOverride();
+            }
+        }
+
         anyChanged |= ImGui.Checkbox("使用系统代理", ref this.Plugin.ConfigInfo.UseSystemProxy);
-        // ImGui.Spacing();
+
+        ImGui.Spacing();
+
+        this._nicknameBuffer ??= this.Plugin.ConfigInfo.Nickname ?? string.Empty;
+        ImGui.TextUnformatted("自定义昵称");
+        ImGui.SetNextItemWidth(-1);
+        if (ImGui.InputTextWithHint("##nickname", "显示在消息中的自定义名称", ref this._nicknameBuffer, 32)) {
+            anyChanged = true;
+        }
+        if (ImGui.IsItemDeactivatedAfterEdit()) {
+            var trimmed = string.IsNullOrWhiteSpace(this._nicknameBuffer) ? null : this._nicknameBuffer.Trim();
+            this.Plugin.ConfigInfo.Nickname = trimmed;
+            Task.Run(async () => await this.Plugin.Client.SetNickname(trimmed));
+        }
+        ImGui.TextUnformatted("设置后其他人看到的消息格式: [标记]<自定义昵称> 消息内容");
         //
         // ImGui.TextUnformatted("Default channel");
         // ImGui.SetNextItemWidth(-1);

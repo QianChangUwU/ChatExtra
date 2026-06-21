@@ -114,6 +114,10 @@ public class ResponseKindFormatter : IMessagePackFormatter<ResponseKind> {
                 var response = options.Resolver.GetFormatterWithVerify<AllowInvitesResponse>().Deserialize(ref reader, options);
                 return new ResponseKind.AllowInvites(response);
             }
+            case "nickname": {
+                var response = options.Resolver.GetFormatterWithVerify<NicknameResponse>().Deserialize(ref reader, options);
+                return new ResponseKind.Nickname(response);
+            }
             default:
                 throw new MessagePackSerializationException("Invalid ResponseKind");
         }

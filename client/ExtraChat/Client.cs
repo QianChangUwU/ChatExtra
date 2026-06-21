@@ -214,6 +214,12 @@ internal class Client : IDisposable {
                     Type = XivChatType.Notice,
                 });
 
+                if (this.Plugin.ConfigInfo.Nickname is { } nickname) {
+                    await this.QueueMessage(new RequestKind.Nickname(new NicknameRequest {
+                        Nickname = nickname,
+                    }));
+                }
+
                 await this.ListAll();
             }
         });
@@ -578,6 +584,12 @@ internal class Client : IDisposable {
         if (!await this.AllowInvites(allow)) {
             this.Plugin.ShowError("无法设置邀请权限。");
         }
+    }
+
+    internal async Task SetNickname(string? nickname) {
+        await this.QueueMessage(new RequestKind.Nickname(new NicknameRequest {
+            Nickname = nickname,
+        }));
     }
 
     private bool _up;
@@ -1024,28 +1036,11 @@ internal class Client : IDisposable {
 
         var isSelf = resp.Sender == this.Plugin.LocalPlayer?.Name.TextValue && resp.World == this.Plugin.LocalPlayer?.HomeWorld.RowId;
 
-        output.AddText($"[{marker}]<");
-        if (isSelf) {
-            output.AddText(resp.Sender);
-        } else {
-            output.Add(new PlayerPayload(resp.Sender, resp.World));
-        }
+        var noteKey = config.GetNoteKey(resp.Sender, resp.World);
+        var displayName = config.Notes.TryGetValue(noteKey, out var note) ? note
+            : resp.Nickname ?? resp.Sender;
 
-        var homeWorldsSame = resp.World == this.Plugin.LocalPlayer?.HomeWorld.RowId;
-        var homeWorldsSameAndOnHomeWorld = homeWorldsSame && this.Plugin.LocalPlayer?.CurrentWorld.RowId == resp.World;
-        if (!isSelf && !homeWorldsSameAndOnHomeWorld) {
-            output.AddIcon(BitmapFontIcon.CrossWorld);
-            var world = this.Plugin.DataManager.GetExcelSheet<World>().GetRowOrDefault(resp.World)?.Name.ToDalamudString();
-            if (world != null) {
-                foreach (var payload in world.Payloads) {
-                    output.Add(payload);
-                }
-            } else {
-                output.AddText($"[Unknown {resp.World}]");
-            }
-        }
-
-        output.AddText("> ");
+        output.AddText($"[{marker}]<{displayName}> ");
 
         foreach (var payload in message.Payloads) {
             output.Add(payload);
@@ -1060,7 +1055,7 @@ internal class Client : IDisposable {
         this.Plugin.ChatGui.Print(new XivChatEntry {
             Message = output.Build(),
             Name = isSelf
-                ? resp.Sender
+                ? displayName
                 : new SeString(new PlayerPayload(resp.Sender, resp.World)),
             Type = outputChannel,
         });

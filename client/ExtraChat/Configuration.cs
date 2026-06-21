@@ -45,6 +45,10 @@ internal class ConfigInfo {
     public int TutorialStep;
     public bool AllowInvites = true;
     public bool UseSystemProxy = false;
+    public string? Nickname;
+    public Dictionary<string, string> Notes = new();
+
+    internal string GetNoteKey(string name, ushort world) => $"{name}\0{world}";
 
     internal string GetName(Guid id) => this.Channels.TryGetValue(id, out var channel)
         ? channel.Name

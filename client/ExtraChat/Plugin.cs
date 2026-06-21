@@ -72,6 +72,7 @@ public class Plugin : IDalamudPlugin {
     internal Commands Commands { get; }
     internal PluginUi PluginUi { get; }
     internal GameFunctions GameFunctions { get; }
+    internal ChannelSelector ChannelSelector { get; }
     internal Ipc Ipc { get; }
     private IDisposable[] Integrations { get; }
 
@@ -98,8 +99,9 @@ public class Plugin : IDalamudPlugin {
         this.Config = this.Interface!.GetPluginConfig() as Configuration ?? new Configuration();
         this.Client = new Client(this);
         this.Commands = new Commands(this);
-        this.PluginUi = new PluginUi(this);
+        this.ChannelSelector = new ChannelSelector(this);
         this.GameFunctions = new GameFunctions(this);
+        this.PluginUi = new PluginUi(this);
         this.Ipc = new Ipc(this);
 
         this.Integrations = [
@@ -136,6 +138,7 @@ public class Plugin : IDalamudPlugin {
             this.LocalPlayer = null;
             WorldUtil.SetLocalPlayer(null);
         }
+
     }
 
     private unsafe void OnMenuOpened(IMenuOpenedArgs args) {
@@ -165,6 +168,13 @@ public class Plugin : IDalamudPlugin {
                 this.PluginUi.InviteInfo = (name, (ushort) world);
             },
         });
+
+        args.AddMenuItem(new MenuItem {
+            Name = "设置备注",
+            OnClicked = _ => {
+                this.PluginUi.SetNoteTarget(name, (ushort) world);
+            },
+        });
     }
 
     private void ObjectContext(IMenuOpenedArgs args, uint objectId) {
@@ -178,6 +188,13 @@ public class Plugin : IDalamudPlugin {
             OnClicked = _ => {
                 var name = chara.Name.TextValue;
                 this.PluginUi.InviteInfo = (name, (ushort) chara.HomeWorld.RowId);
+            },
+        });
+
+        args.AddMenuItem(new MenuItem {
+            Name = "设置备注",
+            OnClicked = _ => {
+                this.PluginUi.SetNoteTarget(chara.Name.TextValue, (ushort) chara.HomeWorld.RowId);
             },
         });
     }

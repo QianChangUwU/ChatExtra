@@ -68,7 +68,7 @@ internal unsafe class GameFunctions : IDisposable {
     #pragma warning disable CS0618
     internal Guid OverrideChannel {
         get => this._overrideChannel;
-        private set {
+        set {
             this._overrideChannel = value;
             this.UpdateChat();
             this.Plugin.Ipc.BroadcastOverride();

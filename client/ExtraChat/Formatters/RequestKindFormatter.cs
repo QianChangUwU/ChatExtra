@@ -27,6 +27,7 @@ public class RequestKindFormatter : IMessagePackFormatter<RequestKind> {
             RequestKind.Version => "version",
             RequestKind.DeleteAccount => "delete_account",
             RequestKind.AllowInvites => "allow_invites",
+            RequestKind.Nickname => "nickname",
             _ => throw new ArgumentOutOfRangeException(nameof(value)),
         };
 
@@ -89,6 +90,9 @@ public class RequestKindFormatter : IMessagePackFormatter<RequestKind> {
                 break;
             case RequestKind.AllowInvites allowInvites:
                 options.Resolver.GetFormatterWithVerify<AllowInvitesRequest>().Serialize(ref writer, allowInvites.Request, options);
+                break;
+            case RequestKind.Nickname nickname:
+                options.Resolver.GetFormatterWithVerify<NicknameRequest>().Serialize(ref writer, nickname.Request, options);
                 break;
         }
     }
@@ -176,6 +180,10 @@ public class RequestKindFormatter : IMessagePackFormatter<RequestKind> {
             case "allow_invites": {
                 var request = options.Resolver.GetFormatterWithVerify<AllowInvitesRequest>().Deserialize(ref reader, options);
                 return new RequestKind.AllowInvites(request);
+            }
+            case "nickname": {
+                var request = options.Resolver.GetFormatterWithVerify<NicknameRequest>().Deserialize(ref reader, options);
+                return new RequestKind.Nickname(request);
             }
             default:
                 throw new MessagePackSerializationException("Invalid RequestKind");

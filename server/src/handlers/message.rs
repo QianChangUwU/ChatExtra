@@ -9,8 +9,8 @@ use crate::types::protocol::ResponseKind;
 use crate::util::send;
 
 pub async fn message(state: Arc<RwLock<State>>, client_state: Arc<RwLock<ClientState>>, conn: &mut WsStream, number: u32, req: MessageRequest) -> Result<()> {
-    let (lodestone_id, sender, world_id) = match &client_state.read().await.user {
-        Some(u) => (u.lodestone_id, u.name.clone(), u.world_id()),
+    let (lodestone_id, sender, world_id, nickname) = match &client_state.read().await.user {
+        Some(u) => (u.lodestone_id, u.name.clone(), u.world_id(), u.nickname.clone()),
         None => return Ok(()),
     };
 
@@ -40,6 +40,7 @@ pub async fn message(state: Arc<RwLock<State>>, client_state: Arc<RwLock<ClientS
             sender,
             world: world_id,
             message: req.message,
+            nickname,
         }),
     };
 

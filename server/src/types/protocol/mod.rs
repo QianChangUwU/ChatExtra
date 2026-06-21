@@ -14,6 +14,7 @@ pub use self::{
     list::*,
     member_change::*,
     message::*,
+    nickname::*,
     ping::*,
     promote::*,
     public_key::*,
@@ -38,6 +39,7 @@ pub mod leave;
 pub mod list;
 pub mod member_change;
 pub mod message;
+pub mod nickname;
 pub mod ping;
 pub mod promote;
 pub mod public_key;

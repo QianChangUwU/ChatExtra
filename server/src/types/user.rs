@@ -7,6 +7,7 @@ pub struct User {
     pub world: World,
     pub raw_world: Option<u16>,
     pub hash: String,
+    pub nickname: Option<String>,
 }
 
 impl User {

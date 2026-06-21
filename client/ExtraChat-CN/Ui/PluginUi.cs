@@ -138,7 +138,7 @@ internal class PluginUi : IDisposable {
         if (ImGui.BeginTabBar("tabs")) {
             if (ImGui.BeginTabItem("频道")) {
                 var status = this.Plugin.Client.Status;
-                ImGui.TextUnformatted($"状态: {status}");
+                ImGui.TextUnformatted($"状态: {StatusText(status)}");
                 ImGui.SameLine();
                 if (ImGuiUtil.IconButton(FontAwesomeIcon.Wifi, tooltip: "重新连接") && !this.Busy) {
                     this.Busy = true;
@@ -359,7 +359,7 @@ internal class PluginUi : IDisposable {
 
                 const string colourPickerId = "linkshell-colour-picker";
 
-                if (ImGui.ColorButton("Linkshell colour", vec, ImGuiColorEditFlags.NoTooltip)) {
+                if (ImGui.ColorButton("频道颜色", vec, ImGuiColorEditFlags.NoTooltip)) {
                     ImGui.OpenPopup(colourPickerId);
                 }
 
@@ -371,7 +371,7 @@ internal class PluginUi : IDisposable {
                     var i = 0;
 
                     foreach (var (uiColour, fg) in this._uiColours) {
-                        if (ImGui.ColorButton($"Colour {uiColour}", fg, ImGuiColorEditFlags.NoTooltip)) {
+                        if (ImGui.ColorButton($"颜色 {uiColour}", fg, ImGuiColorEditFlags.NoTooltip)) {
                             this.Plugin.ConfigInfo.ChannelColors[id] = (ushort) uiColour;
                             anyChanged = true;
                             ImGui.CloseCurrentPopup();
@@ -564,4 +564,17 @@ internal class PluginUi : IDisposable {
             ImGui.PopTextWrapPos();
         }
     }
+
+    private static string StatusText(Client.State status) => status switch {
+        Client.State.Disconnected => "已断开",
+        Client.State.Connecting => "正在连接",
+        Client.State.NotAuthenticated => "未认证",
+        Client.State.RetrievingChallenge => "正在获取验证码",
+        Client.State.WaitingForVerification => "等待验证",
+        Client.State.Verifying => "正在验证",
+        Client.State.Authenticating => "正在认证",
+        Client.State.FailedAuthentication => "认证失败",
+        Client.State.Connected => "已连接",
+        _ => status.ToString(),
+    };
 }

@@ -62,7 +62,7 @@ internal class ChatTwo : IDisposable {
             return;
         }
 
-        if (ImGui.Selectable("Invite to ExtraChat Linkshell")) {
+        if (ImGui.Selectable("邀请加入 ExtraChat 频道")) {
             this.Plugin.PluginUi.InviteInfo = (player.PlayerName, (ushort) player.World.RowId);
         }
     }

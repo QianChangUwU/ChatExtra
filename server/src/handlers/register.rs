@@ -22,8 +22,6 @@ pub async fn register(state: Arc<RwLock<State>>, _client_state: Arc<RwLock<Clien
 }
 
 async fn direct_register(state: Arc<RwLock<State>>, conn: &mut WsStream, number: u32, req: RegisterRequest) -> Result<()> {
-    use std::time::{SystemTime, UNIX_EPOCH};
-
     if !req.challenge_completed {
         // first step: return a dummy challenge
         let challenge = format!("direct_registration_{}", req.world);
@@ -41,10 +39,10 @@ async fn direct_register(state: Arc<RwLock<State>>, conn: &mut WsStream, number:
     let key = prefixed_api_key::generate("extrachat", None);
     let hash = hash_key(&key);
 
-    // generate unique lodestone_id for direct registration
-    let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos() as i64;
-    let name_hash = (req.name.bytes().fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u64)) & 0xFFFF) as i64;
-    let lodestone_id = (ts & 0x7FFFFFFFFFFF) | (name_hash << 47);
+    // generate deterministic lodestone_id from (name, world) so re-registration overwrites the same row
+    let combined = format!("{}\0{}", req.name, req.world);
+    let hash = combined.bytes().fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u64));
+    let lodestone_id = (hash & 0x7FFFFFFFFFFFFFFF) as i64;
 
     // store raw world id so the server can return it to the client
     let world_stored = format!(".raw{}.{}", req.world, world_name);

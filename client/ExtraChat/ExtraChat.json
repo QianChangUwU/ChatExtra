@@ -1,7 +1,7 @@
 {
   "Author": "Anna, QianChangUwU",
-  "Name": "ExtraChat",
-  "InternalName": "ExtraChat",
+  "Name": "ExtraChat-CN",
+  "InternalName": "ExtraChat-CN",
   "Punchline": "跨数据中心、不限成员数量的加密聊天频道。",
   "Description": "ExtraChat 添加端到端加密、跨数据中心、不限成员数量的额外聊天频道到游戏中。",
   "RepoUrl": "https://github.com/QianChangUwU/ChatExtra"

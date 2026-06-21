@@ -19,7 +19,7 @@ namespace ExtraChat;
 public class Plugin : IDalamudPlugin {
     internal const ushort DefaultColour = 578;
 
-    internal static string Name => "ExtraChat";
+    internal static string Name => "ExtraChat-CN";
 
     [PluginService]
     internal static IPluginLog Log { get; private set; }

@@ -9,33 +9,33 @@ namespace ExtraChat.Util;
 internal static class ImGuiUtil {
     private static readonly Dictionary<int, string?[]> Tutorials = new() {
         [0] = new[] {
-            "Create a linkshell",
+            "创建频道",
 
-            "You can use this button to create a new linkshell.",
-            "Alternatively, you can be invited by a friend to join a linkshell.",
+            "点击这个按钮可以创建一个新的 ExtraChat 频道。",
+            "你也可以让好友邀请你加入他们的频道。",
         },
         [1] = new[] {
-            "Refresh data",
+            "刷新数据",
 
-            "This button will refresh all data about your linkshells.",
-            "Generally, you shouldn't need to press this. Clicking on a linkshell refreshes the member list.",
+            "点击这个按钮可以刷新所有频道数据。",
+            "通常不需要手动刷新；点击某个频道时，成员列表会自动更新。",
         },
         [2] = new[] {
-            "Manage linkshells you're in",
+            "管理已加入的频道",
 
-            "Clicking on a linkshell in this list will show you its members in the pane to the right.",
-            "You can also right-click the linkshell name to open a menu with various options.",
-            "If you were invited to a linkshell, you can accept the invitation in this menu.",
+            "点击列表中的频道，右侧会显示该频道的成员。",
+            "也可以右键点击频道名称，打开包含各项操作的菜单。",
+            "如果你收到了频道邀请，可以在这个菜单里接受邀请。",
         },
         [3] = new[] {
-            "Talking in a linkshell",
+            "在频道中发言",
 
-            "The number displayed before the linkshell name is the linkshell's number.",
-            "You can change this number by right-clicking.",
-            "This number is used to determine the command you should use to talk in the linkshell.",
-            "For example, linkshell 1 would use the command /ecl1, linkshell 2 would use /ecl2, etc.",
+            "频道名称前显示的数字就是频道编号。",
+            "右键点击频道名称即可修改编号。",
+            "这个编号决定你要使用哪个命令在对应频道发言。",
+            "例如，编号为 1 的频道使用 /ecl1，编号为 2 的频道使用 /ecl2，依此类推。",
             null,
-            "Click on this linkshell to see the member list.",
+            "点击这个频道可以查看成员列表。",
         },
         [4] = new[] {
             "频道成员",
@@ -50,10 +50,10 @@ internal static class ImGuiUtil {
             "离线成员会以灰色显示。",
         },
         [5] = new[] {
-            "Managing members in a linkshell",
+            "管理频道成员",
 
-            "Moderators and admins of a linkshell can right-click on members in the member list to open a menu with various options.",
-            "Many options require holding the Control key to enable so that they aren't accidentally activated.",
+            "频道的队长和管理员可以右键点击成员列表中的成员，打开成员操作菜单。",
+            "为了避免误操作，许多选项需要按住 Ctrl 键才可使用。",
         },
     };
 
@@ -159,12 +159,12 @@ internal static class ImGuiUtil {
         }
 
         if (step == max) {
-            if (ImGui.Button("Finish")) {
+            if (ImGui.Button("完成")) {
                 current = -1;
                 save = true;
             }
         } else {
-            if (ImGui.Button("Next")) {
+            if (ImGui.Button("下一步")) {
                 current += 1;
                 save = true;
             }
@@ -172,7 +172,7 @@ internal static class ImGuiUtil {
 
         ImGui.SameLine();
 
-        if (ImGui.Button("Skip tutorial")) {
+        if (ImGui.Button("跳过教程")) {
             current = -1;
             save = true;
         }

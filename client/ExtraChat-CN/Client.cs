@@ -253,7 +253,7 @@ internal class Client : IDisposable {
                 return challenge;
             default:
                 this.Status = State.NotAuthenticated;
-                throw new Exception("Unexpected response");
+                throw new Exception("服务器返回了意外响应");
         }
     }
 
@@ -268,7 +268,7 @@ internal class Client : IDisposable {
         var channelInfo = response switch {
             ResponseKind.Error { Response.Error: var error } => throw new Exception(error),
             ResponseKind.Create { Response.Channel: var channel } => (channel, shared),
-            _ => throw new Exception("invalid response"),
+            _ => throw new Exception("服务器返回了无效响应"),
         };
 
         this.Plugin.ConfigInfo.RegisterChannel(channelInfo.channel, channelInfo.shared);
@@ -302,7 +302,7 @@ internal class Client : IDisposable {
         var invitee = response switch {
             ResponseKind.Error { Response.Error: var error } => throw new Exception(error),
             ResponseKind.PublicKey { Response.PublicKey: var respKey } => respKey,
-            _ => throw new Exception("invalid response"),
+            _ => throw new Exception("服务器返回了无效响应"),
         };
 
         if (invitee == null) {
@@ -324,7 +324,7 @@ internal class Client : IDisposable {
         return response switch {
             ResponseKind.Error { Response.Error: var error } => throw new Exception(error),
             ResponseKind.Invite { Response: var invite } => invite,
-            _ => throw new Exception("Unexpected response"),
+            _ => throw new Exception("服务器返回了意外响应"),
         };
     }
 
@@ -347,7 +347,7 @@ internal class Client : IDisposable {
         return response switch {
             ResponseKind.Error { Response.Error: var error } => error,
             ResponseKind.DeleteAccount => null,
-            _ => throw new Exception("Unexpected response"),
+            _ => throw new Exception("服务器返回了意外响应"),
         };
     }
 
@@ -394,7 +394,7 @@ internal class Client : IDisposable {
                 this.Status = State.NotAuthenticated;
                 return key;
             default:
-                throw new Exception("Unexpected response");
+                throw new Exception("服务器返回了意外响应");
         }
     }
 
@@ -480,7 +480,7 @@ internal class Client : IDisposable {
                 break;
             }
             default: {
-                throw new Exception("Unexpected response");
+                throw new Exception("服务器返回了意外响应");
             }
         }
     }
@@ -556,7 +556,7 @@ internal class Client : IDisposable {
         return resp switch {
             ResponseKind.Error { Response.Error: var error } => error,
             ResponseKind.Update => null,
-            _ => throw new Exception("Unexpected response"),
+            _ => throw new Exception("服务器返回了意外响应"),
         };
     }
 

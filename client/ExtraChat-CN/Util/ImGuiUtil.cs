@@ -106,7 +106,7 @@ internal static class ImGuiUtil {
 
         if (!confirmHeld && hovered) {
             ImGui.BeginTooltip();
-            var explainer = $"Hold {mods} to enable this option.";
+            var explainer = $"按住 {mods} 才能使用此选项。";
             var tip = tooltip == null ? explainer : $"{tooltip}\n{explainer}";
             ImGui.TextUnformatted(tip);
             ImGui.EndTooltip();

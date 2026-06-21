@@ -163,7 +163,7 @@ public class Plugin : IDalamudPlugin {
         }
 
         args.AddMenuItem(new MenuItem {
-            Name = "Invite to ExtraChat Linkshell",
+            Name = "邀请加入 ExtraChat 频道",
             OnClicked = _ => {
                 this.PluginUi.InviteInfo = (name, (ushort) world);
             },
@@ -177,7 +177,7 @@ public class Plugin : IDalamudPlugin {
         }
 
         args.AddMenuItem(new MenuItem {
-            Name = "Invite to ExtraChat Linkshell",
+            Name = "邀请加入 ExtraChat 频道",
             OnClicked = _ => {
                 var name = chara.Name.TextValue;
                 this.PluginUi.InviteInfo = (name, (ushort) chara.HomeWorld.RowId);

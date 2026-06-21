@@ -150,7 +150,7 @@ internal class Commands : IDisposable {
 
     internal void SendMessage(Guid id, byte[] bytes) {
         if (!this.Plugin.ConfigInfo.Channels.TryGetValue(id, out var info)) {
-            this.Plugin.ChatGui.PrintError("ExtraChat Linkshell information could not be loaded.");
+            this.Plugin.ChatGui.PrintError("无法加载 ExtraChat 频道信息。");
             return;
         }
 

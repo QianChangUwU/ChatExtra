@@ -41,8 +41,7 @@ async fn direct_register(state: Arc<RwLock<State>>, conn: &mut WsStream, number:
 
     // generate deterministic lodestone_id from (name, world) so re-registration overwrites the same row
     let combined = format!("{}\0{}", req.name, req.world);
-    let hash = combined.bytes().fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u64));
-    let lodestone_id = (hash & 0x7FFFFFFFFFFFFFFF) as i64;
+    let lodestone_id = combined.bytes().fold(0i64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as i64)) & 0x7FFFFFFFFFFFFFFF;
 
     // store raw world id so the server can return it to the client
     let world_stored = format!(".raw{}.{}", req.world, world_name);

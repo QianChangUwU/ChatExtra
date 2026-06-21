@@ -104,9 +104,10 @@ jobs:
         run: |
           mkdir -p release
           cd client/ExtraChat/bin/Release
+          # rename manifest to match InternalName (ExtraChat-CN)
+          mv ExtraChat.json ExtraChat-CN.json
           zip -r $OLDPWD/release/ExtraChat-CN.zip . -x "*.pdb"
           cd $OLDPWD
-          cp client/ExtraChat/ExtraChat-CN.json release/
           ls -la release/
 
       - name: Generate checksums

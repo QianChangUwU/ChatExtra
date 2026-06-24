@@ -2,7 +2,7 @@ name: Build and release
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, dev]
     paths-ignore:
       - '**.md'
       - '.gitignore'
@@ -21,13 +21,17 @@ concurrency:
 permissions:
   contents: write
 
+env:
+  BRANCH: ${{ github.ref_name }}
+
 jobs:
   detect-version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get-version.outputs.version }}
-      should-release: ${{ steps.check-release.outputs.should-release }}
+      tag: ${{ steps.build-tag.outputs.tag }}
       tag-exists: ${{ steps.check-tag.outputs.exists }}
+      should-release: ${{ steps.check-release.outputs.should-release }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,10 +49,22 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Detected version: $VERSION"
 
+      - name: Build tag name
+        id: build-tag
+        run: |
+          BASE="v${{ steps.get-version.outputs.version }}"
+          if [ "${{ env.BRANCH }}" = "dev" ]; then
+            TAG="${BASE}-dev"
+          else
+            TAG="$BASE"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Tag: $TAG"
+
       - name: Check if tag already exists
         id: check-tag
         run: |
-          TAG="v${{ steps.get-version.outputs.version }}"
+          TAG="${{ steps.build-tag.outputs.tag }}"
           if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "Tag $TAG already exists"
@@ -73,6 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.detect-version.outputs.version }}
+      TAG: ${{ needs.detect-version.outputs.tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -104,10 +121,8 @@ jobs:
         run: |
           mkdir -p release
           cd client/ExtraChat-CN/bin/Release
-          # Remove SDK-generated stale files
           rm -f ExtraChat.json ExtraChat.deps.json ExtraChat.pdb
           rm -rf ExtraChat
-          # Only include files needed at runtime (win-x64 only)
           zip -r $OLDPWD/release/ExtraChat-CN.zip \
             ExtraChat-CN.dll \
             ExtraChat-CN.json \
@@ -131,7 +146,6 @@ jobs:
 
       - name: Create and push tag
         run: |
-          TAG="v${VERSION}"
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           if [ "${{ needs.detect-version.outputs.tag-exists }}" = "true" ]; then
@@ -144,16 +158,16 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.VERSION }}
-          name: "ExtraChat v${{ env.VERSION }}"
+          tag_name: ${{ env.TAG }}
+          name: "ExtraChat v${{ env.VERSION }} (${{ env.BRANCH }})"
           body: |
             ## ExtraChat v${{ env.VERSION }}
 
-            Automated release.
+            Automated ${{ env.BRANCH }} release.
           files: |
             release/*
           draft: false
-          prerelease: false
+          prerelease: ${{ env.BRANCH == 'dev' }}
 
       - name: Publish to DalamudPlugins repo
         uses: actions/checkout@v4
@@ -162,12 +176,23 @@ jobs:
           token: ${{ secrets.PLUGIN_REPO_TOKEN }}
           path: dalamud-plugins
 
+      - name: Set channel
+        id: set-channel
+        run: |
+          if [ "${{ env.BRANCH }}" = "dev" ]; then
+            echo "channel=testing" >> $GITHUB_OUTPUT
+          else
+            echo "channel=stable" >> $GITHUB_OUTPUT
+          fi
+
       - name: Update pluginmaster.json
         run: |
           python3 .github/update_pluginmaster.py \
             dalamud-plugins \
             "${{ env.VERSION }}" \
-            "${{ github.repository }}"
+            "${{ github.repository }}" \
+            "${{ steps.set-channel.outputs.channel }}" \
+            "${{ env.TAG }}"
 
       - name: Commit and push to DalamudPlugins
         run: |
@@ -175,5 +200,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add pluginmaster.json
-          git diff --cached --quiet || git commit -m "Update ExtraChat to v${VERSION}"
+          git diff --cached --quiet || git commit -m "Update ExtraChat to v${TAG}"
           git push

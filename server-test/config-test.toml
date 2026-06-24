@@ -1,5 +1,5 @@
 [server]
-address = "127.0.0.1:42070"
+address = "127.0.0.1:29293"
 banner = "ExtraChat CN Test Server"
 
 [database]

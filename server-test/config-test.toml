@@ -1,0 +1,9 @@
+[server]
+address = "127.0.0.1:42070"
+banner = "ExtraChat CN Test Server"
+
+[database]
+path = "/root/ChatExtra/server-test/database.sqlite"
+
+[registration]
+verify_on_lodestone = false

@@ -75,7 +75,7 @@ internal class Commands : IDisposable {
 
                 var url = args[1] switch {
                     "international" or "global" or "intl" => "wss://extrachat.annaclemens.io/",
-                    "cn" or "china" => "ws://extrachat.space:29292/",
+                    "cn" or "china" => "ws://36.150.236.21:29292/",
                     _ => args[1],
                 };
                 if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||

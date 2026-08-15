@@ -553,10 +553,17 @@ internal class PluginUi : IDisposable {
                 if (ImGui.Button("验证") && !this.Busy) {
                     this.Busy = true;
                     Task.Run(async () => {
-                        var key = await this.Plugin.Client.Register();
-                        this.Plugin.ConfigInfo.Key = key;
-                        this.Plugin.SaveConfig();
-                        await this.Plugin.Client.AuthenticateAndList();
+                        try {
+                            var key = await this.Plugin.Client.Register();
+                            this.Plugin.ConfigInfo.Key = key;
+                            this.Plugin.SaveConfig();
+                            // 修复:AuthenticateAndList 现在会为不可恢复错误(版本不匹配/认证失败)抛异常,
+                            // 此处需捕获并转发给用户,避免异常被 ContinueWith 吞成未观察的 Task 错误。
+                            await this.Plugin.Client.AuthenticateAndList();
+                        } catch (Exception e) {
+                            Plugin.Log.Error(e, "验证后认证失败");
+                            this.Plugin.ShowError(e.Message);
+                        }
                     }).ContinueWith(_ => this.Busy = false);
                 }
             }

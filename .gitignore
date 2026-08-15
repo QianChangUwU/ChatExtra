@@ -1,0 +1,5 @@
+# Local packaging output
+/release/
+
+# JetBrains IDE
+.idea/

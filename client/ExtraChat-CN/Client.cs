@@ -39,6 +39,21 @@ internal class Client : IDisposable {
     private uint _number = 1;
     private bool _wasConnected;
 
+    // 修复:同一时刻只允许一个活跃的 Loop/WebSocket。Login 可被重复触发,
+    // 用原子 CompareExchange 保证"只有一个启动者"真正拉起循环。
+    private int _loopRunning;
+
+    // 修复:重建 socket 与运行中的 Loop 之间的互斥,避免竞态释放旧实例。
+    private readonly SemaphoreSlim _loopGate = new(1, 1);
+
+    // 修复:指数退避 + 抖动。失败次数归零时初始约 1s,每次倍增,上限 60s,
+    // 每次在 [delay*0.5, delay*1.5] 加随机抖动;成功连上并认证后重置计数。
+    private int _backoffAttempt;
+    private static readonly TimeSpan MaxBackoff = TimeSpan.FromSeconds(60);
+
+    // 修复:为整个 Loop 周期创建的可取消 CTS,贯穿 Connect/收发/心跳。
+    private CancellationTokenSource? _loopCts;
+
     private KeyPair KeyPair { get; }
 
     private readonly SemaphoreSlim _waitersSemaphore = new(1, 1);
@@ -70,10 +85,35 @@ internal class Client : IDisposable {
         this.Plugin.ClientState.Logout -= this.Logout;
 
         this._active = false;
+
         this._versionCheckCts?.Cancel();
         this._versionCheckCts?.Dispose();
+        this._versionCheckCts = null;
+
+        // 修复:与 StopLoop 相同的显式释放路径 —— 先 Cancel 本周期 CTS,
+        // 再 Abort 在途 socket 以唤醒阻塞中的 Connect/Receive,最后释放旧实例。
+        var cts = this._loopCts;
+        this._loopCts = null;
+        try {
+            cts?.Cancel();
+        } finally {
+            cts?.Dispose();
+        }
+
+        this.WebSocket.Abort();
         this.WebSocket.Dispose();
+        this.Status = State.Disconnected;
+
+        // 修复:显式同步 —— 等待仍在运行的 Loop 完全退出后再释放信号量,
+        // 避免 Dispose 后后台代码继续访问已释放的 _loopGate/_waitersSemaphore。
+        this._loopGate.Wait();
+        try {
+        } finally {
+            this._loopGate.Release();
+        }
+
         this._waitersSemaphore.Dispose();
+        this._loopGate.Dispose();
     }
 
     private void Login() {
@@ -91,6 +131,17 @@ internal class Client : IDisposable {
     internal void StopLoop() {
         this._active = false;
         this._versionCheckCts?.Cancel();
+
+        // 修复:先 Cancel 本周期 CTS 让 Loop/心跳尽快退出,再 Abort socket
+        // 唤醒可能阻塞在 ConnectAsync/ReceiveAsync 上的调用,最后释放旧实例。
+        var cts = this._loopCts;
+        this._loopCts = null;
+        try {
+            cts?.Cancel();
+        } finally {
+            cts?.Dispose();
+        }
+
         this.WebSocket.Abort();
         this.Status = State.Disconnected;
     }
@@ -126,24 +177,34 @@ internal class Client : IDisposable {
     internal void StartLoop() {
         this._active = true;
 
-        Task.Run(async () => {
-            while (this._active) {
-                try {
-                    await this.Loop();
-                } catch (Exception ex) {
-                    Plugin.Log.Error(ex, "Error in client loop");
-                    if (this._wasConnected) {
-                        this.Plugin.ChatGui.Print(new XivChatEntry {
-                            Message = "ExtraChat 连接已断开，正在重连...",
-                            Type = XivChatType.Urgent,
-                        });
-                    }
-                }
+        // 修复:单飞 —— 原子 CompareExchange 保证同一时刻只有一个 Loop 实例。
+        // Login 可能被重复触发,这里确保只有"从 0 拿到 1"的那次才真正启动。
+        if (!this.SingleRunner(Task.Run(() => this.Loop()))) {
+            return;
+        }
+    }
 
-                await Task.Delay(TimeSpan.FromSeconds(3));
-            }
-            // ReSharper disable once FunctionNeverReturns
-        });
+    /// <summary>
+    /// 修复:单飞入口。用 Interlocked.CompareExchange 保证同一时刻只有一个
+    /// 活跃的 Loop 任务;返回 false 表示已有一个在运行,本次调用应直接放弃。
+    /// </summary>
+    private bool SingleRunner(Task loop) {
+        if (Interlocked.CompareExchange(ref this._loopRunning, 1, 0) != 0) {
+            return false;
+        }
+
+        _ = loop.ContinueWith(_ => Interlocked.Exchange(ref this._loopRunning, 0), TaskScheduler.Default);
+        return true;
+    }
+
+    private static TimeSpan ComputeBackoff(int attempt) {
+        // 修复:指数退避 + 抖动。失败次数 0 起步约 1s,每次倍增,上限 60s,
+        // 每次在 [delay*0.5, delay*1.5] 加随机抖动。
+        var exp = Math.Min(attempt, 6);
+        var baseSeconds = Math.Pow(2, exp); // 1, 2, 4, 8, 16, 32, 64(被上限截断为 60)
+        var capped = Math.Min(baseSeconds, MaxBackoff.TotalSeconds);
+        var jitter = 0.5 + 0.5 * Random.Shared.NextDouble(); // [0.5, 1.0],乘以上限得 [0.5,1.5] 抖动
+        return TimeSpan.FromSeconds(capped * jitter);
     }
 
     private async Task<ChannelReader<ResponseKind>> RegisterWaiter(uint number) {
@@ -187,42 +248,48 @@ internal class Client : IDisposable {
         return key;
     }
 
-    internal async Task Connect() {
+    internal async Task Connect(CancellationToken token) {
         var url = this.Plugin.ConfigInfo.ServerUrl;
-        await this.WebSocket.ConnectAsync(new Uri(url), CancellationToken.None);
+        // 修复:ConnectAsync 使用整个 Loop 周期的 CTS,使 Dispose/StopLoop/重建
+        // 都能真正中断正在进行的建连,杜绝失效 socket 残留。
+        await this.WebSocket.ConnectAsync(new Uri(url), token);
     }
 
-    internal Task AuthenticateAndList() {
-        return Task.Run(async () => {
-            var requiredVersion = await this.SendVersion();
+    internal async Task AuthenticateAndList() {
+        var requiredVersion = await this.SendVersion();
 
-            if (requiredVersion is { } required) {
-                var v = typeof(Plugin).Assembly.GetName().Version;
-                var currentVersion = $"{v.Major}.{v.Minor}.{v.Build}.{v.Revision:D2}";
+        if (requiredVersion is { } required) {
+            var v = typeof(Plugin).Assembly.GetName().Version;
+            var currentVersion = $"{v.Major}.{v.Minor}.{v.Build}.{v.Revision:D2}";
 
-                if (required != currentVersion) {
-                    this.StartVersionMismatchNotifications(required, currentVersion);
-                } else {
-                    this.StopVersionMismatchNotifications();
-                }
+            if (required != currentVersion) {
+                // 修复:恢复旧语义 —— 版本提示仅为通知,不阻断连接,低版本也可连入。
+                this.StartVersionMismatchNotifications(required, currentVersion);
+            } else {
+                this.StopVersionMismatchNotifications();
+            }
+        }
+
+        if (await this.Authenticate()) {
+            // 修复:成功连上并认证后重置退避计数。
+            this._backoffAttempt = 0;
+            this._wasConnected = true;
+            this.Plugin.ChatGui.Print(new XivChatEntry {
+                Message = "已连接到 ExtraChat。",
+                Type = XivChatType.Notice,
+            });
+
+            if (this.Plugin.ConfigInfo.Nickname is { } nickname) {
+                await this.QueueMessage(new RequestKind.Nickname(new NicknameRequest {
+                    Nickname = nickname,
+                }));
             }
 
-            if (await this.Authenticate()) {
-                this._wasConnected = true;
-                this.Plugin.ChatGui.Print(new XivChatEntry {
-                    Message = "已连接到 ExtraChat。",
-                    Type = XivChatType.Notice,
-                });
-
-                if (this.Plugin.ConfigInfo.Nickname is { } nickname) {
-                    await this.QueueMessage(new RequestKind.Nickname(new NicknameRequest {
-                        Nickname = nickname,
-                    }));
-                }
-
-                await this.ListAll();
-            }
-        });
+            await this.ListAll();
+        } else {
+            // 修复:恢复到旧语义 —— 认证失败不抛异常(避免在 fire-and-forget 心跳线程中
+            // 产生未观察异常),仅由 Authenticate() 置 State.FailedAuthentication 供 UI 展示。
+        }
     }
 
     /// <summary>
@@ -600,11 +667,58 @@ internal class Client : IDisposable {
 
     #pragma warning disable CS4014
     private async Task Loop() {
-        Start:
+        // 修复:单一重试循环,替代 "StartLoop 的 while + Loop 内部的 goto Start" 双层结构。
+        // 每个迭代都在 _loopGate 内独占一个 gate 持有权,保证任意时刻只有一个
+        // 活跃的 Loop/WebSocket/心跳线程。
+        await this._loopGate.WaitAsync();
+        try {
+            while (this._active) {
+                try {
+                    await this.RunIteration();
+                    // RunIteration 正常返回 = 本次连接运行到退出(断开/异常已完成一轮重连退避),
+                    // 退避失败计数在内部维护,这里不额外 sleep。
+                } catch (OperationCanceledException) when (!this._active || (this._loopCts?.IsCancellationRequested ?? false)) {
+                    // 修复:取消是正常的关闭路径,不视为失败,不进入退避。
+                } catch (Exception ex) {
+                    Plugin.Log.Error(ex, "Error in client loop");
+                }
+
+                if (!this._active) {
+                    return;
+                }
+
+                // 修复:指数退避 + 抖动(初始约 1s,倍增,上限 60s,[0.5,1.5] 抖动)。
+                var delay = ComputeBackoff(this._backoffAttempt);
+                this._backoffAttempt++;
+
+                if (this._wasConnected) {
+                    this.Plugin.ChatGui.Print(new XivChatEntry {
+                        Message = "ExtraChat 连接已断开，正在重连...",
+                        Type = XivChatType.Urgent,
+                    });
+                }
+
+                var cts = this._loopCts;
+                try {
+                    await Task.Delay(delay, cts?.Token ?? CancellationToken.None);
+                } catch (OperationCanceledException) {
+                    // 正在关闭,退出循环。
+                }
+            }
+        } finally {
+            this._loopGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// 修复:单次连接迭代。完成一次 "建连 → 心跳起点 → 收发主循环 → 清理"。
+    /// 成功认证后重置退避计数;断连/异常统一向调用方抛出,由 Loop 统一做退避规划,
+    /// 彻底消除嵌套循环与 goto。
+    /// </summary>
+    private async Task RunIteration() {
         this._wasConnected = false;
         this._up = false;
         this._number = 1;
-        this.WebSocket.Abort();
         this.Status = State.Disconnected;
 
         if (!this._active) {
@@ -623,51 +737,50 @@ internal class Client : IDisposable {
             this._waitersSemaphore.Release();
         }
 
-        // If the websocket is closed, we need to reconnect
+        // 修复:为整个 Loop 周期创建可取消 CTS,供 Connect/心跳/收发统一使用。
+        // 先安全释放上一个周期的 CTS,再换新。
+        var oldCts = this._loopCts;
+        this._loopCts = new CancellationTokenSource();
+        try {
+            oldCts?.Cancel();
+        } finally {
+            oldCts?.Dispose();
+        }
+        var token = this._loopCts.Token;
+
+        // 修复:重建 socket 前先 Abort+Dispose 旧实例,避免旧 socket 与新实例并存。
+        // (整体重建受 _loopGate 保护,不会有并发 Loop 与之竞争。)
+        this.WebSocket.Abort();
         this.WebSocket.Dispose();
         this.WebSocket = new ClientWebSocket();
         this.ApplyProxySettings();
 
         this.Status = State.Connecting;
-        await this.Connect();
+        await this.Connect(token);
 
-        Task.Run(async () => {
-            while (this._active && !this._up) {
-                if (this.WebSocket.State != WebSocketState.Open) {
-                    await Task.Delay(TimeSpan.FromSeconds(1));
-                    continue;
-                }
-
-                try {
-                    await this.WebSocket.SendMessage(new RequestContainer {
-                        Number = IsUpPingNumber,
-                        Kind = new RequestKind.Ping(new PingRequest()),
-                    });
-                } catch {
-                    // websocket disconnected, will retry on next loop
-                }
-
-                await Task.Delay(TimeSpan.FromSeconds(1));
-            }
-
-            if (this._active && this.Plugin.ConfigInfo.Key != null) {
-                this.AuthenticateAndList();
-            }
-        });
+        // 修复:心跳不再 fire-and-forget。保留 task 引用并纳入主 WhenAny,
+        // 使心跳异常(发送失败=需重连、认证/版本错误=不可恢复)都能冒泡到 Loop,
+        // 避免成为未观察 Task 而触发 finalizer 线程的 "Unobserved exception"。
+        var heartbeat = this.HeartbeatLoop(token);
 
         if (this.Plugin.ConfigInfo.Key == null) {
             this.Status = State.NotAuthenticated;
         }
 
-        var websocketMessage = this.WebSocket.ReceiveMessage();
-        var toSend = this.ToSend.Reader.ReadAsync().AsTask();
+        var websocketMessage = this.WebSocket.ReceiveMessage(token);
+        var toSend = this.ToSend.Reader.ReadAsync(token).AsTask();
 
         while (this._active && this.WebSocket.State == WebSocketState.Open) {
-            var finished = await Task.WhenAny(websocketMessage, toSend);
+            Task finished;
+            try {
+                finished = await Task.WhenAny(websocketMessage, toSend, heartbeat);
+            } catch (OperationCanceledException) {
+                throw;
+            }
 
             if (finished == websocketMessage) {
                 var response = await websocketMessage;
-                websocketMessage = this.WebSocket.ReceiveMessage();
+                websocketMessage = this.WebSocket.ReceiveMessage(token);
 
                 switch (response) {
                     case { Kind: ResponseKind.Ping, Number: IsUpPingNumber } when !this._up: {
@@ -727,18 +840,48 @@ internal class Client : IDisposable {
                 }
             } else if (finished == toSend) {
                 var (req, update) = await toSend;
-                toSend = this.ToSend.Reader.ReadAsync().AsTask();
+                toSend = this.ToSend.Reader.ReadAsync(token).AsTask();
 
-                await this.WebSocket.SendMessage(req);
+                await this.WebSocket.SendMessage(req, token);
                 if (update != null) {
                     await update.WriteAsync(await this.RegisterWaiter(req.Number));
                 }
+            } else {
+                // finished == heartbeat:观察其结果。心跳正常结束(_up=true)时忽略;
+                // 若抛异常(发送失败等)则向上冒泡,由 Loop 触发重连。
+                await heartbeat;
             }
         }
 
-        await Task.Delay(TimeSpan.FromSeconds(3));
-        goto Start;
-        // ReSharper disable once FunctionNeverReturns
+        // 修复:连接从主循环退出(断开/被取消),不在此处再硬 sleep 3 秒 ——
+        // 退避由外层 Loop 统一通过 ComputeBackoff 完成。
+    }
+
+    /// <summary>
+    /// 修复:心跳循环,使用 Loop 周期的同一 CTS Token。发送失败直接 throw,
+    /// 交由 Loop 触发重连;停止条件由 StopLoop/Dispose 的 Cancel 驱动,不再空 catch 硬睡。
+    /// </summary>
+    private async Task HeartbeatLoop(CancellationToken token) {
+        while (this._active && !this._up) {
+            if (this.WebSocket.State != WebSocketState.Open) {
+                // 修复:等待期间用带 token 的 Task.Delay,Dispose/Cancel 可立即中断。
+                await Task.Delay(TimeSpan.FromSeconds(1), token);
+                continue;
+            }
+
+            // 修复:发送失败直接抛出,让外层 Loop 进入重连;不再吞异常后硬 sleep。
+            await this.WebSocket.SendMessage(new RequestContainer {
+                Number = IsUpPingNumber,
+                Kind = new RequestKind.Ping(new PingRequest()),
+            }, token);
+
+            await Task.Delay(TimeSpan.FromSeconds(1), token);
+        }
+
+        if (this._active && this.Plugin.ConfigInfo.Key != null) {
+            // 修复:待认证(可选)。AuthenticateAndList 内部已做不可恢复错误判断。
+            await this.AuthenticateAndList();
+        }
     }
     #pragma warning restore CS4014
 
@@ -1084,4 +1227,5 @@ internal class Client : IDisposable {
 
         this.Plugin.ShowInfo($"收到 {info.Name}{PluginUi.CrossWorld}{WorldUtil.WorldName(info.World)} 的邀请，加入 \"{name}\"");
     }
+
 }
